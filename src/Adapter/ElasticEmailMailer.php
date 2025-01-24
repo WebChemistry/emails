@@ -39,14 +39,20 @@ final readonly class ElasticEmailMailer extends AbstractMailer
 			throw new InvalidArgumentException(sprintf('Message must be instance of %s.', TemplateMessage::class));
 		}
 
-		$this->sendApiRequest('POST', '/v4/emails', [
+		$body = [
 			'Recipients' => array_map($this->accountToArray(...), $recipients),
 			'Content' => array_filter([
 				'From' => $sender->toString(),
 				'TemplateName' => $message->getTemplate(),
 				'Subject' => $subject,
 			], fn (mixed $val) => $val !== null),
-		]);
+		];
+
+		if ($bodyOptions = $this->getOptions($options)) {
+			$body['Options'] = $bodyOptions;
+		}
+
+		$this->sendApiRequest('POST', '/v4/emails', $body);
 	}
 
 	/**
@@ -91,6 +97,21 @@ final readonly class ElasticEmailMailer extends AbstractMailer
 		}
 
 		return $this->client->request($method, 'https://api.elasticemail.com' . $path, $options);
+	}
+
+	/**
+	 * @param mixed[] $options
+	 * @return mixed[]
+	 */
+	private function getOptions(array $options): array
+	{
+		$body = [];
+
+		if (is_string($channel = $options['channel'] ?? null) && $channel !== '') {
+			$body['ChannelName'] = $channel;
+		}
+
+		return $body;
 	}
 
 }
