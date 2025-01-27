@@ -14,6 +14,11 @@ final class CompoundEmailValidator implements EmailValidator
 	{
 	}
 
+	public function addValidator(EmailValidator $validator): void
+	{
+		$this->validators[] = $validator;
+	}
+
 	/**
 	 * @param mixed[] $options
 	 */
