@@ -5,7 +5,7 @@ namespace WebChemistry\Emails\Bounce;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
 
-trait EmailBounceCounterEntity
+trait EmailBounceCounterEntity // @phpstan-ignore-line
 {
 
 	public const TableName = 'email_bounce_counters';

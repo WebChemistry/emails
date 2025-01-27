@@ -89,7 +89,7 @@ final readonly class BounceManager
 		return $this->_getBounceCount($email);
 	}
 
-	private function _getBounceCount(string $email, bool $lock = false)
+	private function _getBounceCount(string $email, bool $lock = false): int
 	{
 		$query = $this->getConnection()->createQueryBuilder();
 		$query->from('email_bounce_counters', 'c');
