@@ -28,7 +28,8 @@
 		"aws/aws-sdk-php": "^3.338",
 		"doctrine/orm": "^3.3",
 		"doctrine/dbal": "^3.6",
-		"phpunit/phpunit": "^11.5"
+		"phpunit/phpunit": "^11.5",
+		"webchemistry/disposable-emails": "^1.0"
 	},
 	"config": {
 		"allow-plugins": {
