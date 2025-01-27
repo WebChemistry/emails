@@ -18,7 +18,7 @@ final readonly class CompoundMailer implements Mailer
 
 	public function send(array $recipients, Message $message, array $options = []): void
 	{
-		$this->transactional->send($recipients, $message);
+		$this->transactional->send($recipients, $message, $options);
 	}
 
 	public function operate(
