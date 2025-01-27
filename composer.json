@@ -3,21 +3,32 @@
 	"type": "library",
 	"license": "MIT",
 	"require": {
-		"php": ">=8.2"
+		"php": ">=8.2",
+		"nette/utils": "^3.0 || ^4.0"
 	},
 	"autoload": {
 		"psr-4": {
 			"WebChemistry\\Emails\\": "src/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"Tests\\": "tests/"
+		}
+	},
 	"scripts": {
-		"phpstan": "phpstan analyse"
+		"phpstan": "phpstan analyse",
+		"tests": "phpunit tests"
 	},
 	"require-dev": {
 		"phpstan/phpstan": "^2.1",
 		"symfony/http-client": "^7.2",
 		"mailgun/mailgun-php": "^4.3",
-		"nyholm/psr7": "^1.8"
+		"nyholm/psr7": "^1.8",
+		"aws/aws-sdk-php": "^3.338",
+		"doctrine/orm": "^3.3",
+		"doctrine/dbal": "^3.6",
+		"phpunit/phpunit": "^11.5"
 	},
 	"config": {
 		"allow-plugins": {
