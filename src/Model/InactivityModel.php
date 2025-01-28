@@ -22,13 +22,14 @@ final readonly class InactivityModel
 
 	/**
 	 * @param string|string[] $emails
+	 * @return string[]
 	 */
-	public function incrementCounter(string|array $emails, string $section = EmailManager::SectionGlobal): void
+	public function incrementCounter(string|array $emails, string $section = EmailManager::SectionGlobal): array
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;
 
 		if (!$emails) {
-			return;
+			return [];
 		}
 
 		$this->insert(
@@ -41,6 +42,8 @@ final readonly class InactivityModel
 		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section), $section);
 
 		$this->subscriberModel->unsubscribe($inactiveEmails, EmailManager::SuspensionTypeInactivity, $section);
+
+		return $inactiveEmails;
 	}
 
 	public function getCount(string $email, string $section = EmailManager::SectionGlobal): int
@@ -49,6 +52,24 @@ final readonly class InactivityModel
 			'SELECT counter FROM email_inactivity_counters WHERE email = ? AND section = ?',
 			[$email, $section],
 		);
+	}
+
+	/**
+	 * @param string|string[] $emails
+	 */
+	public function resetAllCounterSections(string|array $emails): void
+	{
+		$emails = is_string($emails) ? [$emails] : $emails;
+
+		if (!$emails) {
+			return;
+		}
+
+		$this->getConnection()->createQueryBuilder()
+			->delete('email_inactivity_counters')
+			->where('email IN(?)')
+			->setParameter(0, $emails, ArrayParameterType::STRING)
+			->executeStatement();
 	}
 
 	/**

@@ -11,14 +11,7 @@ final class SubscriberModelTest extends TestCase
 
 	use DatabaseEnvironment;
 
-	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_suspensions (email VARCHAR(255), type VARCHAR(255), section VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, type, section));';
-
 	private SubscriberModel $model;
-
-	private static function getInitialSql(): string
-	{
-		return self::TableSql;
-	}
 
 	protected function setUp(): void
 	{

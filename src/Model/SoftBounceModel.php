@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails\Model;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\Persistence\ConnectionRegistry;
@@ -19,7 +20,10 @@ final readonly class SoftBounceModel
 	{
 	}
 
-	public function incrementBounce(string $email): void
+	/**
+	 * @return string[]
+	 */
+	public function incrementBounce(string $email): array
 	{
 		$connection = $this->getConnection();
 		$connection->beginTransaction();
@@ -43,7 +47,7 @@ final readonly class SoftBounceModel
 					throw $exception;
 				}
 
-				return;
+				return [$email];
 			}
 
 			$builder = $this->getConnection()->createQueryBuilder();
@@ -72,16 +76,26 @@ final readonly class SoftBounceModel
 
 			throw $exception;
 		}
+
+		return [];
 	}
 
-	public function resetBounce(string $email): void
+	/**
+	 * @param string|string[] $emails
+	 */
+	public function resetBounce(string|array $emails): void
 	{
-		$stmt = $this->getConnection()->prepare(
-			'DELETE FROM email_bounce_counters WHERE email = ?'
-		);
-		$stmt->bindValue(1, $email);
+		$emails = is_string($emails) ? [$emails] : $emails;
 
-		$stmt->executeStatement();
+		if (!$emails) {
+			return;
+		}
+
+		$this->getConnection()->createQueryBuilder()
+			->delete('email_bounce_counters')
+			->where('email IN(?)')
+			->setParameter(0, $emails, ArrayParameterType::STRING)
+			->executeStatement();
 	}
 
 	public function getBounceCount(string $email): int

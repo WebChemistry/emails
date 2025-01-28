@@ -24,7 +24,7 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 		}
 
 		if (!$request->isPostMethod()) {
-			return self::BadRequest;
+			return self::MethodNotAllowed;
 		}
 
 		$json = json_decode($request->body, true);
@@ -62,14 +62,16 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 			return self::BadRequest;
 		}
 
-		if ($event === 'open') {
+		if ($event === 'opened') {
 			$manager->recordOpenActivity($email, $section);
 		} else if ($event === 'unsubscribed') {
 			$manager->unsubscribe($email, $section);
-		} else if ($event === 'failed') {
-			if ($severity === 'temporary') {
+		} else if ($event === 'failed' && $severity === 'permanent') {
+			$bounceType = $payload['delivery-status']['bounce-type'] ?? null;
+
+			if ($bounceType === 'soft') {
 				$manager->softBounce($email);
-			} else if ($severity === 'permanent') {
+			} else {
 				$manager->hardBounce($email);
 			}
 		} else if ($event === 'complained') {

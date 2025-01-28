@@ -19,14 +19,16 @@ trait DatabaseEnvironment
 	private Connection $connection;
 	private ConnectionRegistry $registry;
 
-	abstract private static function getInitialSql(): string;
-
 	#[BeforeClass]
 	public static function before(): void
 	{
 		self::$_connection = DriverManager::getConnection(TestHelper::getDatabaseConfiguration());
 
-		self::$_connection->executeStatement(self::getInitialSql());
+		self::$_connection->executeStatement(
+			'CREATE TABLE IF NOT EXISTS email_bounce_counters (email VARCHAR(255) PRIMARY KEY, bounce_count INT);' .
+			'CREATE TABLE IF NOT EXISTS email_inactivity_counters (email VARCHAR(255), section VARCHAR(255), counter INT, PRIMARY KEY(email, section));' .
+			'CREATE TABLE IF NOT EXISTS email_suspensions (email VARCHAR(255), type VARCHAR(255), section VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, type, section));'
+		);
 
 		self::$_registry = new class(self::$_connection) implements ConnectionRegistry {
 
@@ -59,7 +61,7 @@ trait DatabaseEnvironment
 		};
 	}
 
-	#[Before]
+	#[Before(11)]
 	public function setUpDatabase(): void
 	{
 		$this->connection = self::$_connection;

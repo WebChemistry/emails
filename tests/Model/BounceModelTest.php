@@ -12,16 +12,9 @@ final class BounceModelTest extends TestCase
 
 	use DatabaseEnvironment;
 
-	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_bounce_counters (email VARCHAR(255) PRIMARY KEY, bounce_count INT);';
-
 	private SoftBounceModel $model;
 
 	private SubscriberModel $subscriberModel;
-
-	private static function getInitialSql(): string
-	{
-		return self::TableSql . SubscriberModelTest::TableSql;
-	}
 
 	protected function setUp(): void
 	{

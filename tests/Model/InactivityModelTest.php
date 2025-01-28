@@ -12,16 +12,9 @@ final class InactivityModelTest extends TestCase
 
 	use DatabaseEnvironment;
 
-	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_inactivity_counters (email VARCHAR(255), section VARCHAR(255), counter INT, PRIMARY KEY(email, section));';
-
 	private InactivityModel $model;
 
 	private SubscriberModel $subscriberModel;
-
-	private static function getInitialSql(): string
-	{
-		return self::TableSql . SubscriberModelTest::TableSql;
-	}
 
 	protected function setUp(): void
 	{

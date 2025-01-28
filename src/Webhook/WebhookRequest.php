@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Webhook;
 
 use OutOfBoundsException;
+use Psr\Http\Message\RequestInterface;
 
 final readonly class WebhookRequest
 {
@@ -82,6 +83,17 @@ final readonly class WebhookRequest
 		}
 
 		return $normalized;
+	}
+
+	public static function fromPsr(RequestInterface $request): self
+	{
+		$headers = [];
+
+		foreach ($request->getHeaders() as $name => $_) {
+			$headers[$name] = $request->getHeaderLine($name);
+		}
+
+		return new self($request->getMethod(), $request->getBody()->getContents(), $headers);
 	}
 
 }

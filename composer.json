@@ -29,7 +29,8 @@
 		"doctrine/orm": "^3.3",
 		"doctrine/dbal": "^3.6",
 		"phpunit/phpunit": "^11.5",
-		"webchemistry/disposable-emails": "^1.0"
+		"webchemistry/disposable-emails": "^1.0",
+		"guzzlehttp/psr7": "^2.7"
 	},
 	"config": {
 		"allow-plugins": {

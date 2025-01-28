@@ -1,0 +1,68 @@
+POST /test HTTP/1.1
+Host: localhost
+Accept: */*
+Accept-Encoding: gzip
+Content-Length: 1364
+Content-Type: application/json
+User-Agent: Go-http-client/1.1
+
+{
+	"signature": {
+		"token": "809d12a32a517d6ff797904558564411e339e3742e97b0d6bf",
+		"timestamp": "1738097854",
+		"signature": "49e3c230b84f25e8e6c754d586105dc4ffc5f4118e6d2b2149229f53f7f6b238"
+	},
+	"event-data": {
+		"id": "G9Bn5sl1TC6nu79C8C0bwg",
+		"timestamp": 1521233195.375624,
+		"log-level": "error",
+		"event": "failed",
+		"severity": "permanent",
+		"reason": "suppress-bounce",
+		"delivery-status": {
+			"attempt-no": 1,
+            "bounce-type": "soft",
+			"message": "",
+			"code": 605,
+			"enhanced-code": "",
+			"description": "Not delivering to previously bounced address",
+			"session-seconds": 0
+		},
+		"flags": {
+			"is-routed": false,
+			"is-authenticated": true,
+			"is-system-test": false,
+			"is-test-mode": false
+		},
+		"envelope": {
+			"sender": "bob@mg.example.com",
+			"transport": "smtp",
+			"targets": "alice@example.com"
+		},
+		"message": {
+			"headers": {
+				"to": "Alice <alice@example.com>",
+				"message-id": "20130503192659.13651.20287@mg.example.com",
+				"from": "Bob <bob@mg.example.com>",
+				"subject": "Test permanent_fail webhook"
+			},
+			"attachments": [],
+			"size": 111
+		},
+		"recipient": "alice@example.com",
+		"recipient-domain": "example.com",
+		"storage": {
+			"url": "https://se.api.mailgun.net/v3/domains/mg.example.com/messages/message_key",
+			"key": "message_key"
+		},
+		"campaigns": [],
+		"tags": [
+			"my_tag_1",
+			"my_tag_2"
+		],
+		"user-variables": {
+			"my_var_1": "Mailgun Variable #1",
+			"my-var-2": "awesome"
+		}
+	}
+}
