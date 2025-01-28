@@ -26,5 +26,5 @@ jobs:
       - run: composer install --no-progress --prefer-dist
       - name: Run tests
         env:
-          DB_DSN: 'pdo_mysql://root:root@localhost:3306/test'
+          DB_DSN: 'pdo-mysql://root:root@localhost:3306/test'
         run: composer tests
