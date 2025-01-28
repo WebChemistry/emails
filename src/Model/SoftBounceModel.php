@@ -1,19 +1,19 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Bounce;
+namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\Persistence\ConnectionRegistry;
 use Throwable;
-use WebChemistry\Emails\Subscription\EmailUnsubscriber;
+use WebChemistry\Emails\EmailManager;
 
-final readonly class BounceManager
+final readonly class SoftBounceModel
 {
 
 	public function __construct(
 		private ConnectionRegistry $registry,
-		private EmailUnsubscriber $unsubscriber,
+		private SubscriberModel $subscriberModel,
 		private int $bounceLimit = 3,
 	)
 	{
@@ -37,7 +37,7 @@ final readonly class BounceManager
 				} catch (Throwable $exception) {
 				}
 
-				$this->unsubscriber->unsubscribe($email);
+				$this->subscriberModel->unsubscribe($email, EmailManager::SuspensionTypeSoftBounce);
 
 				if (isset($exception)) {
 					throw $exception;

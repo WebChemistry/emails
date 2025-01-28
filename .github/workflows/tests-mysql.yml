@@ -1,0 +1,30 @@
+name: "Tests MySQL"
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          coverage: none
+          extensions: pdo_mysql
+
+      - run: composer install --no-progress --prefer-dist
+      - name: Run tests
+        env:
+          DB_DSN: 'pdo_mysql://root:root@localhost:3306/test'
+        run: composer tests
