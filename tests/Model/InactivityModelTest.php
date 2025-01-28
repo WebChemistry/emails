@@ -12,7 +12,7 @@ final class InactivityModelTest extends TestCase
 
 	use DatabaseEnvironment;
 
-	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_inactivity_counters (email VARCHAR, section VARCHAR, counter INTEGER, PRIMARY KEY(email, section));';
+	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_inactivity_counters (email VARCHAR(255), section VARCHAR(255), counter INT, PRIMARY KEY(email, section));';
 
 	private InactivityModel $model;
 

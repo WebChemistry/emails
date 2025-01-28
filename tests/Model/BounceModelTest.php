@@ -12,7 +12,7 @@ final class BounceModelTest extends TestCase
 
 	use DatabaseEnvironment;
 
-	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_bounce_counters (email VARCHAR PRIMARY KEY, bounce_count INTEGER);';
+	public const TableSql = 'CREATE TABLE IF NOT EXISTS email_bounce_counters (email VARCHAR(255) PRIMARY KEY, bounce_count INT);';
 
 	private SoftBounceModel $model;
 
