@@ -3,17 +3,13 @@
 namespace WebChemistry\Emails\Unsubscribe;
 
 use InvalidArgumentException;
+use WebChemistry\Emails\Common\Encoder;
 
 final readonly class UnsubscribeManager
 {
 
-	public const TimeSalt = 'time';
-	public const RandomSalt = 'random';
-	public const NoSalt = 'no';
-
 	public function __construct(
-		private UnsubscribeEncoder $encoder,
-		private string $salt = self::RandomSalt,
+		private Encoder $encoder,
 	)
 	{
 	}
@@ -26,13 +22,7 @@ final readonly class UnsubscribeManager
 			throw new InvalidArgumentException('Link already contains unsubscribe value.');
 		}
 
-		if ($this->salt === self::NoSalt) {
-			$value = $this->encoder->encode($email, $section, ...$arguments);
-		} else if ($this->salt === self::TimeSalt) {
-			$value = $this->encoder->encodeWithTimeSalt($email, $section, ...$arguments);
-		} else {
-			$value = $this->encoder->encodeWithRandomSalt($email, $section, ...$arguments);
-		}
+		$value = $this->encoder->encode($email, $section, ...$arguments);
 
 		return $link . (str_contains($link, '?') ? '&' : '?') . 'u=' . $value;
 	}
@@ -53,7 +43,20 @@ final readonly class UnsubscribeManager
 			return null;
 		}
 
-		return $this->encoder->decode($param);
+		$values = $this->encoder->decode($param);
+
+		if ($values === null) {
+			return null;
+		}
+
+		$email = $values[0] ?? null;
+		$section = $values[1] ?? null;
+
+		if (!is_string($email)) {
+			return null;
+		}
+
+		return new DecodedUnsubscribeValue($email, $section, array_slice($values, 2));
 	}
 
 }

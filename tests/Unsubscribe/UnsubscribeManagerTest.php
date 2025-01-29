@@ -4,8 +4,9 @@ namespace Tests\Unsubscribe;
 
 use InvalidArgumentException;
 use Tests\TestCase;
+use WebChemistry\Emails\Common\Encoder;
+use WebChemistry\Emails\Common\EncodeType;
 use WebChemistry\Emails\Unsubscribe\DecodedUnsubscribeValue;
-use WebChemistry\Emails\Unsubscribe\UnsubscribeEncoder;
 use WebChemistry\Emails\Unsubscribe\UnsubscribeManager;
 
 final class UnsubscribeManagerTest extends TestCase
@@ -15,29 +16,60 @@ final class UnsubscribeManagerTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$encoder = new UnsubscribeEncoder('secret');
-		$this->manager = new UnsubscribeManager($encoder, UnsubscribeManager::NoSalt);
+		$encoder = new Encoder('secret', EncodeType::Basic);
+		$this->manager = new UnsubscribeManager($encoder);
 	}
 
 	public function testLinkGeneration(): void
 	{
+		$hash = 'u=v1.b.00aa103ab72126599c49578b792075c1b3eb71354162c78ea881cd9ce402835bdGVzdEBleGFtcGxlLmNvbQ';
+		$expected = 'http://example.com/unsubscribe?' . $hash;
 		$this->assertSame(
-			'http://example.com/unsubscribe?u=v1.n.a4d1fa49e4544c1d6388d1b3671b511e0a60846b4ded34017262e78039fadb7cdGVzdEBleGFtcGxlLmNvbQ',
+			$expected,
 			$this->manager->addToLink('http://example.com/unsubscribe', $this->firstEmail),
 		);
 		$this->assertSame(
-			'http://example.com/unsubscribe?u=v1.n.a4d1fa49e4544c1d6388d1b3671b511e0a60846b4ded34017262e78039fadb7cdGVzdEBleGFtcGxlLmNvbQ',
+			$expected,
 			$this->manager->addToLink('http://example.com/unsubscribe?', $this->firstEmail),
 		);
 
+		$expected = 'http://example.com/unsubscribe?id=12&' . $hash;
+
 		$this->assertSame(
-			'http://example.com/unsubscribe?id=12&u=v1.n.a4d1fa49e4544c1d6388d1b3671b511e0a60846b4ded34017262e78039fadb7cdGVzdEBleGFtcGxlLmNvbQ',
+			$expected,
 			$this->manager->addToLink('http://example.com/unsubscribe?id=12', $this->firstEmail),
 		);
 		$this->assertSame(
-			'http://example.com/unsubscribe?id=12&u=v1.n.a4d1fa49e4544c1d6388d1b3671b511e0a60846b4ded34017262e78039fadb7cdGVzdEBleGFtcGxlLmNvbQ',
+			$expected,
 			$this->manager->addToLink('http://example.com/unsubscribe?id=12&', $this->firstEmail),
 		);
+	}
+
+	public function testLinkGenerationWithSection(): void
+	{
+		$this->assertSame(
+			$expected = 'http://example.com/unsubscribe?u=v1.b.d449b1b40491bbb871755a52c8a576353ac313c501209b18f24c649df3557c7fdGVzdEBleGFtcGxlLmNvbQ.c2VjdGlvbg',
+			$this->manager->addToLink('http://example.com/unsubscribe', $this->firstEmail, 'section'),
+		);
+
+		$this->assertEquals(new DecodedUnsubscribeValue(
+			$this->firstEmail,
+			'section',
+		), $this->manager->getFromLink($expected));
+	}
+
+	public function testLinkGenerationWithSectionAndNulls(): void
+	{
+		$this->assertSame(
+			$expected = 'http://example.com/unsubscribe?u=v1.b.f3c4560b1f879b5a0caca0febd572fe2c516b23faa9baf04134e22c4b005dd72dGVzdEBleGFtcGxlLmNvbQ.c2VjdGlvbg..Zm9v',
+			$this->manager->addToLink('http://example.com/unsubscribe', $this->firstEmail, 'section', null, 'foo'),
+		);
+
+		$this->assertEquals(new DecodedUnsubscribeValue(
+			$this->firstEmail,
+			'section',
+			[null, 'foo'],
+		), $this->manager->getFromLink($expected));
 	}
 
 	public function testParameterAlreadyExists(): void
@@ -56,7 +88,7 @@ final class UnsubscribeManagerTest extends TestCase
 
 	public function testGetting(): void
 	{
-		$link = 'http://example.com/unsubscribe?u=v1.n.a4d1fa49e4544c1d6388d1b3671b511e0a60846b4ded34017262e78039fadb7cdGVzdEBleGFtcGxlLmNvbQ';
+		$link = 'http://example.com/unsubscribe?u=v1.b.00aa103ab72126599c49578b792075c1b3eb71354162c78ea881cd9ce402835bdGVzdEBleGFtcGxlLmNvbQ';
 		$this->assertEquals(new DecodedUnsubscribeValue(
 			$this->firstEmail,
 		), $this->manager->getFromLink($link));
