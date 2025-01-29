@@ -16,4 +16,11 @@ final class ConfirmationManagerTest extends TestCase
 		$this->assertSame($this->firstEmail, $encoder->verify($encoder->getConfirmationCode($this->firstEmail)));
 	}
 
+	public function testInvalidConfirmationCode(): void
+	{
+		$encoder = new ConfirmationManager(new Encoder(openssl_random_pseudo_bytes(32)));
+
+		$this->assertNull($encoder->verify(substr($encoder->getConfirmationCode($this->firstEmail), 0, -1)));
+	}
+
 }
