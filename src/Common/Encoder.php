@@ -19,6 +19,17 @@ final class Encoder
 	{
 	}
 
+	public static function fromBase64(#[SensitiveParameter] string $secret, EncodeType $type = EncodeType::Salt): self
+	{
+		$decoded = base64_decode($secret, true);
+
+		if ($decoded === false) {
+			throw new LogicException('Invalid secret.');
+		}
+
+		return new self($decoded, $type);
+	}
+
 	public function withType(EncodeType $type): self
 	{
 		return new self($this->secret, $type);
