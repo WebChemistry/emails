@@ -17,7 +17,7 @@
 		}
 	},
 	"scripts": {
-		"phpstan": "phpstan analyse",
+		"phpstan": "phpstan analyse --memory-limit=1G",
 		"tests": "phpunit tests"
 	},
 	"require-dev": {
@@ -30,7 +30,8 @@
 		"doctrine/dbal": "^3.6",
 		"phpunit/phpunit": "^11.5",
 		"webchemistry/disposable-emails": "^1.0",
-		"guzzlehttp/psr7": "^2.7"
+		"guzzlehttp/psr7": "^2.7",
+		"symfony/clock": "^7.2"
 	},
 	"config": {
 		"allow-plugins": {
