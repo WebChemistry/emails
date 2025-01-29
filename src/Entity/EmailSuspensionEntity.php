@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails\Entity;
 
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
 use WebChemistry\Emails\EmailManager;
@@ -23,11 +24,15 @@ trait EmailSuspensionEntity // @phpstan-ignore trait.unused
 	#[Column(type: 'string', length: 15)]
 	private string $section;
 
+	#[Column(type: 'datetime_immutable')]
+	private DateTimeImmutable $createdAt;
+
 	public function __construct(string $email, string $type, string $section = EmailManager::SectionGlobal)
 	{
 		$this->email = $email;
 		$this->type = $type;
 		$this->section = $section;
+		$this->createdAt = new DateTimeImmutable();
 	}
 
 	public function getEmail(): string
@@ -43,6 +48,11 @@ trait EmailSuspensionEntity // @phpstan-ignore trait.unused
 	public function getSection(): string
 	{
 		return $this->section;
+	}
+
+	public function getCreatedAt(): DateTimeImmutable
+	{
+		return $this->createdAt;
 	}
 
 }
