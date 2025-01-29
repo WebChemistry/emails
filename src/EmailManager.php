@@ -5,6 +5,7 @@ namespace WebChemistry\Emails;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriberModel;
+use WebChemistry\Emails\Unsubscribe\UnsubscribeManager;
 
 final class EmailManager
 {
@@ -25,6 +26,7 @@ final class EmailManager
 		private InactivityModel $inactivityModel,
 		private SubscriberModel $subscriberModel,
 		private SoftBounceModel $softBounceModel,
+		private UnsubscribeManager $unsubscribeManager,
 	)
 	{
 	}
@@ -44,6 +46,17 @@ final class EmailManager
 	public function unsubscribe(array|string $emails, string $section): void
 	{
 		$this->subscriberModel->unsubscribe($emails, self::SuspensionTypeUnsubscribe, $section);
+	}
+
+	public function tryToUnsubscribeFromLink(string $link): void
+	{
+		$value = $this->unsubscribeManager->getFromLink($link);
+
+		if (!$value) {
+			return;
+		}
+
+		$this->unsubscribe([$value->email], $value->section ?? self::SectionGlobal);
 	}
 
 	public function resubscribe(string $email, string $section): void
