@@ -15,7 +15,7 @@ trait EmailBounceCounterEntity // @phpstan-ignore trait.unused
 	private string $email;
 
 	#[Column(type: 'integer', options: ['default' => '0'])]
-	private int $bounceCount = 0;
+	private int $counter = 0;
 
 	public function __construct(string $email)
 	{
@@ -27,14 +27,14 @@ trait EmailBounceCounterEntity // @phpstan-ignore trait.unused
 		return $this->email;
 	}
 
-	public function getBounceCount(): int
+	public function getCounter(): int
 	{
-		return $this->bounceCount;
+		return $this->counter;
 	}
 
 	public function increment(): void
 	{
-		$this->bounceCount++;
+		$this->counter++;
 	}
 
 }

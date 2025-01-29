@@ -56,12 +56,12 @@ final readonly class SoftBounceModel
 				$builder->insert('email_bounce_counters')
 					->values([
 						'email' => '?',
-						'bounce_count' => 1,
+						'counter' => 1,
 					])
 					->setParameter(0, $email);
 			} else {
 				$builder->update('email_bounce_counters')
-					->set('bounce_count', 'bounce_count + 1')
+					->set('counter', 'counter + 1')
 					->where('email = ?')
 					->setParameter(0, $email);
 			}
@@ -107,7 +107,7 @@ final readonly class SoftBounceModel
 	{
 		$query = $this->getConnection()->createQueryBuilder();
 		$query->from('email_bounce_counters', 'c');
-		$query->select('c.bounce_count');
+		$query->select('c.counter');
 		$query->where('c.email = :email');
 		$query->setParameter('email', $email);
 
