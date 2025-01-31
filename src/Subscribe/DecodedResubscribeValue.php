@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Unsubscribe;
+namespace WebChemistry\Emails\Subscribe;
 
-final readonly class DecodedUnsubscribeValue
+final readonly class DecodedResubscribeValue
 {
 
 	/**

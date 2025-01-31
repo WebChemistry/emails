@@ -2,10 +2,13 @@
 
 namespace WebChemistry\Emails;
 
+use LogicException;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriberModel;
-use WebChemistry\Emails\Unsubscribe\UnsubscribeManager;
+use WebChemistry\Emails\Subscribe\DecodedResubscribeValue;
+use WebChemistry\Emails\Subscribe\DecodedUnsubscribeValue;
+use WebChemistry\Emails\Subscribe\SubscribeManager;
 
 final class EmailManager
 {
@@ -26,7 +29,7 @@ final class EmailManager
 		private InactivityModel $inactivityModel,
 		private SubscriberModel $subscriberModel,
 		private SoftBounceModel $softBounceModel,
-		private UnsubscribeManager $unsubscribeManager,
+		private ?SubscribeManager $subscribeManager = null,
 	)
 	{
 	}
@@ -48,15 +51,19 @@ final class EmailManager
 		$this->subscriberModel->unsubscribe($emails, self::SuspensionTypeUnsubscribe, $section);
 	}
 
-	public function tryToUnsubscribeFromLink(string $link): void
+	public function processSubscriptionLink(string $link): void
 	{
-		$value = $this->unsubscribeManager->getFromLink($link);
-
-		if (!$value) {
-			return;
+		if (!$this->subscribeManager) {
+			throw new LogicException('SubscribeManager is not set.');
 		}
 
-		$this->unsubscribe([$value->email], $value->section ?? self::SectionGlobal);
+		$value = $this->subscribeManager->loadQueryParameter($link);
+
+		if ($value instanceof DecodedUnsubscribeValue) {
+			$this->unsubscribe([$value->email], $value->section ?? self::SectionGlobal);
+		} else if ($value instanceof DecodedResubscribeValue) {
+			$this->resubscribe($value->email, $value->section ?? self::SectionGlobal);
+		}
 	}
 
 	public function resubscribe(string $email, string $section): void
