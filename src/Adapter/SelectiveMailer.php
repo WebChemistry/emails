@@ -3,7 +3,6 @@
 namespace WebChemistry\Emails\Adapter;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
@@ -11,7 +10,7 @@ use WebChemistry\Emails\OperationType;
 final readonly class SelectiveMailer implements Mailer
 {
 
-	public const OptionKey = 'mailer';
+	public const OptionKey = 'section';
 
 	private Mailer $defaultMailer;
 
