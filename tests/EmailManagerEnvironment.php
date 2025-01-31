@@ -4,6 +4,7 @@ namespace Tests;
 
 use PHPUnit\Framework\Attributes\Before;
 use WebChemistry\Emails\Common\Encoder;
+use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
@@ -32,7 +33,7 @@ trait EmailManagerEnvironment
 		$this->inactivityModel = new InactivityModel(2, $this->registry, $this->subscriberModel);
 		$this->softBounceModel = new SoftBounceModel($this->registry, $this->subscriberModel);
 		$this->unsubscribeManager = new SubscribeManager(new Encoder('secret'));
-		$this->manager = new EmailManager(
+		$this->manager = new DefaultEmailManager(
 			$this->inactivityModel,
 			$this->subscriberModel,
 			$this->softBounceModel,
