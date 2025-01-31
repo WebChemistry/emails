@@ -169,4 +169,16 @@ final readonly class SubscriberModel
 		return $sections;
 	}
 
+	/**
+	 * @param string[]|string $emails
+	 */
+	public function clear(array|string $emails): void
+	{
+		$this->getConnection()->createQueryBuilder()
+			->delete('email_suspensions')
+			->where('email IN(:emails)')
+			->setParameter('emails', is_string($emails) ? [$emails] : $emails, ArrayParameterType::STRING)
+			->executeStatement();
+	}
+
 }

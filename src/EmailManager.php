@@ -141,4 +141,14 @@ final class EmailManager
 		$this->inactivityModel->resetAllCounterSections($emails);
 	}
 
+	/**
+	 * @param string[]|string $emails
+	 */
+	public function clearRecords(array|string $emails): void
+	{
+		$this->reset($emails);
+
+		$this->subscriberModel->clear($emails);
+	}
+
 }

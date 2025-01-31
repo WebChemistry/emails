@@ -37,4 +37,18 @@ final class EmailManagerTest extends TestCase
 		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
 	}
 
+	public function testClear(): void
+	{
+		$this->subscriberModel->unsubscribe($this->firstEmail, EmailManager::SuspensionTypeUnsubscribe);
+		$this->subscriberModel->unsubscribe($this->firstEmail, EmailManager::SuspensionTypeInactivity);
+
+		$this->manager->softBounce($this->firstEmail);
+		$this->manager->hardBounce($this->firstEmail);
+
+		$this->manager->clearRecords($this->firstEmail);
+
+		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
+		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
+	}
+
 }
