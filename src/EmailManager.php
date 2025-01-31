@@ -56,10 +56,10 @@ interface EmailManager
 	public function isSuspended(string $email, string $section): bool;
 
 	/**
-	 * @param string[] $emails
-	 * @return string[]
+	 * @param EmailAccount[] $accounts
+	 * @return EmailAccount[]
 	 */
-	public function clearFromSuspended(array $emails, string $section): array;
+	public function clearFromSuspendedAccounts(array $accounts, string $section): array;
 
 	/**
 	 * @param string[]|string $emails

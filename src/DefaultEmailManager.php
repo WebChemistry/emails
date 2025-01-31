@@ -124,12 +124,27 @@ final class DefaultEmailManager implements EmailManager
 	}
 
 	/**
-	 * @param string[] $emails
-	 * @return string[]
+	 * @param EmailAccount[] $accounts
+	 * @return EmailAccount[]
 	 */
-	public function clearFromSuspended(array $emails, string $section): array
+	public function clearFromSuspendedAccounts(array $accounts, string $section): array
 	{
-		return $this->subscriberModel->clearFromSuspended($emails, $section);
+		$index = [];
+		$emails = [];
+
+		foreach ($accounts as $account) {
+			$index[$account->email] = $account;
+			$emails[] = $account->email;
+		}
+
+		$validEmails = $this->subscriberModel->clearFromSuspended($emails, $section);
+		$return = [];
+
+		foreach ($validEmails as $email) {
+			$return[] = $index[$email];
+		}
+
+		return $return;
 	}
 
 	/**

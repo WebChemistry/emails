@@ -47,9 +47,9 @@ final class VoidEmailManager implements EmailManager
 		return false;
 	}
 
-	public function clearFromSuspended(array $emails, string $section): array
+	public function clearFromSuspendedAccounts(array $accounts, string $section): array
 	{
-		return $emails;
+		return $accounts;
 	}
 
 	public function clearRecords(array|string $emails): void

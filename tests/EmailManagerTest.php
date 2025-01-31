@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailManager;
 
 final class EmailManagerTest extends TestCase
@@ -49,6 +50,19 @@ final class EmailManagerTest extends TestCase
 
 		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
 		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
+	}
+
+	public function testClearSuspended(): void
+	{
+		$this->manager->spamComplaint($this->firstEmail);
+
+		$accounts = $this->manager->clearFromSuspendedAccounts([
+			new EmailAccount($this->firstEmail),
+			new EmailAccount($this->secondEmail),
+		], EmailManager::SectionTransactional);
+
+		$this->assertCount(1, $accounts);
+		$this->assertEquals($this->secondEmail, $accounts[0]->email);
 	}
 
 }
