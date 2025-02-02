@@ -4,11 +4,8 @@ namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
-use WebChemistry\Emails\EmailManager;
-use WebChemistry\Emails\EmailRegistry;
-use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Section\Section;
-use WebChemistry\Emails\Section\SectionCategory;
 
 final readonly class InactivityModel
 {
@@ -22,7 +19,7 @@ final readonly class InactivityModel
 	{
 	}
 
-	public function beforeEmailSent(BeforeEmailSentEvent $event): void
+	public function afterEmailSent(AfterEmailSentEvent $event): void
 	{
 		$unsubscribed = $this->incrementCounter($event->registry->getEmails(), $event->category->section);
 

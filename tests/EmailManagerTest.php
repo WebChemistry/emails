@@ -45,9 +45,9 @@ final class EmailManagerTest extends TestCase
 			$called = true;
 		});
 
-		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
-		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
-		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
 
 		$this->assertFalse($this->manager->canSend($this->firstEmail, 'notifications'));
 		$this->assertTrue($called);

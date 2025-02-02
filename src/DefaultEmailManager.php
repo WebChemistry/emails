@@ -147,16 +147,17 @@ final readonly class DefaultEmailManager implements EmailManager
 
 		$this->suspensionModel->beforeEmailSent($event);
 		$this->subscriptionModel->beforeEmailSent($event);
-		$this->inactivityModel->beforeEmailSent($event);
 
 		$this->dispatcher?->dispatch($event);
 	}
 
 	public function afterEmailSent(EmailRegistry $registry, string $section, string $category = SectionCategory::Global): void
 	{
-		if ($this->dispatcher) {
-			$event = new AfterEmailSentEvent($this, $registry, $this->sections->getCategory($section, $category));
+		$event = new AfterEmailSentEvent($this, $registry, $this->sections->getCategory($section, $category));
 
+		$this->inactivityModel->afterEmailSent($event);
+
+		if ($this->dispatcher) {
 			$this->dispatcher->dispatch($event);
 		}
 	}
