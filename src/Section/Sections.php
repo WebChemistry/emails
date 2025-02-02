@@ -18,7 +18,7 @@ final class Sections
 
 	public function getEssentialCategory(): SectionCategory
 	{
-		return $this->getCategory(EmailManager::SectionEssential, SectionCategory::Global);
+		return $this->getCategory(EmailManager::SectionEssential);
 	}
 
 	public function getEssentialSection(): Section

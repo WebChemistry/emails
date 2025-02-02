@@ -8,6 +8,7 @@ use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\EmailRegistry;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\SuspensionType;
 
@@ -28,151 +29,51 @@ final readonly class SuspensionModel
 			return;
 		}
 
-		foreach ($this->getSuspendedEmails($event->registry->getEmails()) as $email) {
+		foreach ($this->getSuspendedEmails($event->registry->getEmails(), $event->category->section) as $email) {
 			$event->registry->remove($email);
 		}
-	}
-
-	/**
-	 * @template TKey of array-key
-	 * @param array<TKey, string> $emails
-	 * @return array<TKey, string>
-	 */
-	public function filterEmailsForDelivery(array $emails): array
-	{
-		$suspended = $this->createSuspensionIndex($emails);
-
-		return array_filter($emails, static fn ($email): bool => !isset($suspended[$email]));
 	}
 
 	/**
 	 * @param string[] $emails
 	 * @return iterable<string>
 	 */
-	private function getSuspendedEmails(array $emails): iterable
+	private function getSuspendedEmails(array $emails, Section $section): iterable
 	{
 		$connection = $this->connectionAccessor->get();
 
-		$result = $connection->createQueryBuilder()
+		$qb = $connection->createQueryBuilder()
 			->select('email')
 			->from('email_suspensions')
 			->where('email IN(:emails)')
-			->setParameter('emails', $emails, ArrayParameterType::STRING)
-			->executeQuery();
+			->setParameter('emails', $emails, ArrayParameterType::STRING);
 
-		while (($value = $result->fetchAssociative()) !== false) {
+		if ($section->isEssential()) {
+			$qb->andWhere('type = :type')
+				->setParameter('type', SuspensionType::HardBounce->value);
+		}
+
+		$result = $qb->executeQuery();
+
+		while ($value = $result->fetchAssociative()) {
 			yield $value['email'];
 		}
 	}
 
-	/**
-	 * @param string[] $emails
-	 * @return array<string, bool>
-	 */
-	public function createSuspensionIndex(array $emails): array
+	public function isSuspended(string $email, Section $section): bool
 	{
-		if (!$emails) {
-			return [];
-		}
-
-		$connection = $this->connectionAccessor->get();
-
-		$result = $connection->createQueryBuilder()
-			->select('email')
+		$qb = $this->connectionAccessor->get()->createQueryBuilder()
+			->select('1')
 			->from('email_suspensions')
-			->where('email IN(:emails)')
-			->setParameter('emails', $emails, ArrayParameterType::STRING)
-			->executeQuery();
+			->where('email = :email')
+			->setParameter('email', $email);
 
-		$index = [];
-
-		while (($value = $result->fetchAssociative()) !== false) {
-			$index[$value['email']] = true;
+		if ($section->isEssential()) {
+			$qb->andWhere('type = :type')
+				->setParameter('type', SuspensionType::HardBounce->value);
 		}
 
-		return $index;
-	}
-
-	public function isSuspended(string $email): bool
-	{
-		return (bool) $this->connectionAccessor->get()->fetchOne(
-			'SELECT 1 FROM email_suspensions WHERE email = ?',
-			[$email]
-		);
-	}
-
-	/**
-	 * @param string[] $emails
-	 * @return string[]
-	 */
-	public function removeSuspendedEmailsFrom(array $emails): array
-	{
-		$index = $this->getSuspendedEmailIndex($emails);
-
-		if (!$index) {
-			return $emails;
-		}
-
-		$return = [];
-
-		foreach ($emails as $email) {
-			if (!isset($index[$email])) {
-				$return[] = $email;
-			}
-		}
-
-		return $return;
-	}
-
-	/**
-	 * @param EmailAccount[] $accounts
-	 * @return EmailAccount[]
-	 */
-	public function removeSuspendedEmailAccountsFrom(array $accounts): array
-	{
-		$index = $this->getSuspendedEmailIndex(array_map(fn (EmailAccount $account) => $account->email, $accounts));
-
-		if (!$index) {
-			return $accounts;
-		}
-
-		$return = [];
-
-		foreach ($accounts as $account) {
-			if (!isset($index[$account->email])) {
-				$return[] = $account;
-			}
-		}
-
-		return $return;
-	}
-
-	/**
-	 * @param string[] $emails
-	 * @return array<string, bool>
-	 */
-	private function getSuspendedEmailIndex(array $emails): array
-	{
-		if (!$emails) {
-			return [];
-		}
-
-		$connection = $this->connectionAccessor->get();
-
-		$result = $connection->createQueryBuilder()
-			->select('email')
-			->from('email_suspensions')
-			->where('email IN(:emails)')
-			->setParameter('emails', $emails, ArrayParameterType::STRING)
-			->executeQuery();
-
-		$index = [];
-
-		while (($value = $result->fetchAssociative()) !== false) {
-			$index[$value['email']] = true;
-		}
-
-		return $index;
+		return (bool) $qb->executeQuery()->fetchOne();
 	}
 
 	/**

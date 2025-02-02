@@ -166,7 +166,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$category = $this->sections->getCategory($section, $category);
 
-		return !$this->suspensionModel->isSuspended($email) && $this->subscriptionModel->isSubscribed($email, $category);
+		return !$this->suspensionModel->isSuspended($email, $category->section) && $this->subscriptionModel->isSubscribed($email, $category);
 	}
 
 	/**

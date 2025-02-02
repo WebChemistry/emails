@@ -5,6 +5,7 @@ namespace Tests\Model;
 use Tests\DatabaseEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Type\SuspensionType;
 
 final class SuspensionModelTest extends TestCase
@@ -14,14 +15,17 @@ final class SuspensionModelTest extends TestCase
 
 	private SuspensionModel $model;
 
+	private Section $section;
+
 	protected function setUp(): void
 	{
+		$this->section = new Section('notifications');
 		$this->model = new SuspensionModel($this->connectionAccessor);
 	}
 
 	public function testNoSuspensions(): void
 	{
-		$this->assertFalse($this->model->isSuspended($this->firstEmail));
+		$this->assertFalse($this->model->isSuspended($this->firstEmail, $this->section));
 		$this->assertSame([], $this->model->getReasons($this->firstEmail));
 	}
 
@@ -29,7 +33,7 @@ final class SuspensionModelTest extends TestCase
 	{
 		$this->model->suspend($this->firstEmail, SuspensionType::SpamComplaint);
 
-		$this->assertTrue($this->model->isSuspended($this->firstEmail));
+		$this->assertTrue($this->model->isSuspended($this->firstEmail, $this->section));
 		$this->assertSame([SuspensionType::SpamComplaint], $this->model->getReasons($this->firstEmail));
 	}
 
@@ -38,8 +42,29 @@ final class SuspensionModelTest extends TestCase
 		$this->model->suspend($this->firstEmail, SuspensionType::SpamComplaint);
 		$this->model->suspend($this->firstEmail, SuspensionType::HardBounce);
 
-		$this->assertTrue($this->model->isSuspended($this->firstEmail));
+		$this->assertTrue($this->model->isSuspended($this->firstEmail, $this->section));
 		$this->assertSame($this->sort([SuspensionType::SpamComplaint, SuspensionType::HardBounce]), $this->sort($this->model->getReasons($this->firstEmail)));
+	}
+
+	public function testSuspendEssentialSectionViaSpamComplaint(): void
+	{
+		$this->model->suspend($this->firstEmail, SuspensionType::SpamComplaint);
+
+		$this->assertFalse($this->model->isSuspended($this->firstEmail, new Section(Section::Essential)));
+	}
+
+	public function testSuspendEssentialSectionViaHardBounce(): void
+	{
+		$this->model->suspend($this->firstEmail, SuspensionType::HardBounce);
+
+		$this->assertTrue($this->model->isSuspended($this->firstEmail, new Section(Section::Essential)));
+	}
+
+	public function testSuspendEssentialSectionViaSoftBounce(): void
+	{
+		$this->model->suspend($this->firstEmail, SuspensionType::SoftBounce);
+
+		$this->assertFalse($this->model->isSuspended($this->firstEmail, new Section(Section::Essential)));
 	}
 
 	public function testActivate(): void
@@ -50,7 +75,7 @@ final class SuspensionModelTest extends TestCase
 
 		$this->model->activate($this->firstEmail);
 
-		$this->assertTrue($this->model->isSuspended($this->firstEmail));
+		$this->assertTrue($this->model->isSuspended($this->firstEmail, $this->section));
 		$this->assertSame([SuspensionType::SpamComplaint], $this->model->getReasons($this->firstEmail));
 	}
 
@@ -62,17 +87,8 @@ final class SuspensionModelTest extends TestCase
 
 		$this->model->reset($this->firstEmail);
 
-		$this->assertFalse($this->model->isSuspended($this->firstEmail));
+		$this->assertFalse($this->model->isSuspended($this->firstEmail, $this->section));
 		$this->assertSame([], $this->model->getReasons($this->firstEmail));
-	}
-
-	public function testRemoveMethods(): void
-	{
-		$this->model->suspend($this->firstEmail, SuspensionType::SpamComplaint);
-		$this->model->suspend($this->secondEmail, SuspensionType::HardBounce);
-
-		$this->assertSame([$this->thirdEmail], $this->model->removeSuspendedEmailsFrom([$this->firstEmail, $this->secondEmail, $this->thirdEmail]));
-		$this->assertSame([$this->thirdEmailAccount], $this->model->removeSuspendedEmailAccountsFrom([$this->firstEmailAccount, $this->secondEmailAccount, $this->thirdEmailAccount]));
 	}
 
 	/**

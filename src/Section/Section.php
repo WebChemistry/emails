@@ -7,6 +7,8 @@ use InvalidArgumentException;
 final readonly class Section
 {
 
+	public const Essential = 'essential';
+
 	public const MaxLength = 30;
 
 	/** @var array<string, SectionCategory> */
@@ -68,6 +70,11 @@ final readonly class Section
 	public function isUnsubscribable(): bool
 	{
 		return $this->unsubscribable;
+	}
+
+	public function isEssential(): bool
+	{
+		return $this->name === self::Essential;
 	}
 
 	/**

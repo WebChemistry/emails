@@ -38,6 +38,7 @@ final class SubscriptionModelTest extends TestCase
 		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getEssentialCategory());
 
 		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getEssentialCategory()));
+		$this->assertEmpty($this->databaseSnapshot());
 	}
 
 	public function testUnsubscribeNotification(): void
