@@ -3,6 +3,7 @@
 namespace Tests;
 
 use PHPUnit\Framework\Attributes\Before;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
@@ -30,6 +31,8 @@ trait EmailManagerEnvironment
 
 	private SuspensionModel $suspensionModel;
 
+	private EventDispatcher $dispatcher;
+
 	#[Before(10)]
 	public function setUpWebhook(): void
 	{
@@ -38,6 +41,7 @@ trait EmailManagerEnvironment
 		$this->subscriptionModel = new SubscriptionModel($this->connectionAccessor);
 		$this->unsubscribeManager = new SubscribeManager(new Encoder('secret'));
 		$this->suspensionModel = new SuspensionModel($this->connectionAccessor);
+		$this->dispatcher = new EventDispatcher();
 		$this->manager = new DefaultEmailManager(
 			$this->sections,
 			$this->inactivityModel,
@@ -45,6 +49,7 @@ trait EmailManagerEnvironment
 			$this->subscriptionModel,
 			$this->suspensionModel,
 			$this->unsubscribeManager,
+			$this->dispatcher,
 		);
 	}
 

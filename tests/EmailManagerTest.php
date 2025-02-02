@@ -2,7 +2,8 @@
 
 namespace Tests;
 
-use WebChemistry\Emails\EmailAccount;
+use WebChemistry\Emails\Event\InactiveEmailsEvent;
+use WebChemistry\Emails\StringEmailRegistry;
 
 final class EmailManagerTest extends TestCase
 {
@@ -37,6 +38,39 @@ final class EmailManagerTest extends TestCase
 		$this->assertTrue($this->manager->canSend($this->firstEmail, 'notifications'));
 	}
 
+	public function testUnsubscribeBecauseOfInactivity(): void
+	{
+		$called = false;
+		$this->dispatcher->addListener(InactiveEmailsEvent::class, function () use (&$called): void {
+			$called = true;
+		});
+
+		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->beforeEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+
+		$this->assertFalse($this->manager->canSend($this->firstEmail, 'notifications'));
+		$this->assertTrue($called);
+	}
+
+	public function testFilterFromSuspension(): void
+	{
+		$this->manager->hardBounce($this->firstEmail);
+
+		$this->manager->beforeEmailSent($registry = new StringEmailRegistry([$this->firstEmail]), 'notifications');
+
+		$this->assertCount(0, $registry->getEmails());
+	}
+
+	public function testFilterFromUnsubscribe(): void
+	{
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+
+		$this->manager->beforeEmailSent($registry = new StringEmailRegistry([$this->firstEmail]), 'notifications');
+
+		$this->assertCount(0, $registry->getEmails());
+	}
+
 	public function testReset(): void
 	{
 		$this->manager->unsubscribe($this->firstEmail, 'notifications');
@@ -48,45 +82,6 @@ final class EmailManagerTest extends TestCase
 
 		$this->assertTrue($this->manager->canSend($this->firstEmail, 'notifications'));
 		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
-	}
-
-	public function testEmailAccountsForDelivery(): void
-	{
-		$this->manager->spamComplaint($this->firstEmail);
-
-		$accounts = $this->manager->filterEmailAccountsForDelivery([
-			new EmailAccount($this->firstEmail),
-			new EmailAccount($this->secondEmail),
-		], 'notifications');
-
-		$this->assertCount(1, $accounts);
-		$this->assertEquals($this->secondEmail, $accounts[0]->email);
-	}
-
-	public function testEmailAccountsForDeliveryEmailIsUnsubscribed(): void
-	{
-		$this->manager->unsubscribe($this->firstEmail, 'notifications');
-
-		$accounts = $this->manager->filterEmailAccountsForDelivery([
-			new EmailAccount($this->firstEmail),
-			new EmailAccount($this->secondEmail),
-		], 'notifications');
-
-		$this->assertCount(1, $accounts);
-		$this->assertEquals($this->secondEmail, $accounts[0]->email);
-	}
-
-	public function testEmailsForDelivery(): void
-	{
-		$this->manager->spamComplaint($this->firstEmail);
-
-		$accounts = $this->manager->filterEmailsForDelivery([
-			$this->firstEmail,
-			$this->secondEmail,
-		], 'notifications');
-
-		$this->assertCount(1, $accounts);
-		$this->assertEquals($this->secondEmail, $accounts[0]);
 	}
 
 }

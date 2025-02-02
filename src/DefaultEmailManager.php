@@ -3,10 +3,15 @@
 namespace WebChemistry\Emails;
 
 use LogicException;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use WebChemistry\Emails\Event\AfterEmailSentEvent;
+use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Subscribe\DecodedResubscribeValue;
 use WebChemistry\Emails\Subscribe\DecodedUnsubscribeValue;
@@ -24,6 +29,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		private SubscriptionModel $subscriptionModel,
 		private SuspensionModel $suspensionModel,
 		private ?SubscribeManager $subscribeManager = null,
+		private ?EventDispatcherInterface $dispatcher = null,
 	)
 	{
 	}
@@ -108,7 +114,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function recordOpenActivity(array|string $emails, string $section): void
+	public function emailOpened(array|string $emails, string $section): void
 	{
 		$this->inactivityModel->resetCounter($emails, $this->sections->getSection($section));
 	}
@@ -116,16 +122,42 @@ final readonly class DefaultEmailManager implements EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function recordSentActivity(array|string $emails, string $section): void
+	public function inactive(array|string $emails, string $section): void
 	{
+		$emails = is_string($emails) ? [$emails] : $emails;
+
+		if (!$emails) {
+			return;
+		}
+
 		$section = $this->sections->getSection($section);
 
-		$unsubscribed = $this->inactivityModel->incrementCounter($emails, $section);
+		$this->subscriptionModel->unsubscribe(
+			$emails,
+			UnsubscribeType::Inactivity,
+			$section->getGlobalCategory(),
+		);
 
-		if ($unsubscribed) {
-			$this->subscriptionModel->unsubscribe($unsubscribed, UnsubscribeType::Inactivity, $section->getGlobalCategory());
+		$this->dispatcher?->dispatch(new InactiveEmailsEvent($emails, $section));
+	}
 
-			$this->resetSoftBouncesAndInactivity($unsubscribed);
+	public function beforeEmailSent(EmailRegistry $registry, string $section, string $category = SectionCategory::Global): void
+	{
+		$event = new BeforeEmailSentEvent($this, $registry, $this->sections->getCategory($section, $category));
+
+		$this->suspensionModel->beforeEmailSent($event);
+		$this->subscriptionModel->beforeEmailSent($event);
+		$this->inactivityModel->beforeEmailSent($event);
+
+		$this->dispatcher?->dispatch($event);
+	}
+
+	public function afterEmailSent(EmailRegistry $registry, string $section, string $category = SectionCategory::Global): void
+	{
+		if ($this->dispatcher) {
+			$event = new AfterEmailSentEvent($this, $registry, $this->sections->getCategory($section, $category));
+
+			$this->dispatcher->dispatch($event);
 		}
 	}
 
@@ -134,57 +166,6 @@ final readonly class DefaultEmailManager implements EmailManager
 		$category = $this->sections->getCategory($section, $category);
 
 		return !$this->suspensionModel->isSuspended($email) && $this->subscriptionModel->isSubscribed($email, $category);
-	}
-
-	/**
-	 * @param string[] $emails
-	 * @return string[]
-	 */
-	public function filterEmailsForDelivery(array $emails, string $section, string $category = EmailManager::GlobalCategory): array
-	{
-		return $this->_filterEmails($emails, $section, $category);
-	}
-
-	/**
-	 * @param EmailAccount[] $accounts
-	 * @return EmailAccount[]
-	 */
-	public function filterEmailAccountsForDelivery(array $accounts, string $section, string $category = EmailManager::GlobalCategory): array
-	{
-		return $this->_filterEmails($accounts, $section, $category, static fn (EmailAccount $account): string => $account->email);
-	}
-
-	/**
-	 * @template TValue
-	 * @template TKey of array-key
-	 * @param array<TKey, TValue> $values
-	 * @param callable(TValue): string $getEmail
-	 * @return TValue[]
-	 */
-	private function _filterEmails(array $values, string $section, string $category, ?callable $getEmail = null): array
-	{
-		$category = $this->sections->getCategory($section, $category);
-
-		$emails = [];
-
-		if ($getEmail) {
-			foreach ($values as $key => $value) {
-				$emails[$key] = $getEmail($value);
-			}
-		} else {
-			$emails = $values;
-		}
-
-		$emails = $this->suspensionModel->filterEmailsForDelivery($emails);
-		$emails = $this->subscriptionModel->filterEmailsForDelivery($emails, $category);
-
-		$return = [];
-
-		foreach ($emails as $key => $_) {
-			$return[] = $values[$key];
-		}
-
-		return $return;
 	}
 
 	/**

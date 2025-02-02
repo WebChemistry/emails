@@ -33,7 +33,8 @@
 		"guzzlehttp/psr7": "^2.7",
 		"symfony/clock": "^7.2",
 		"nette/di": "^3.2",
-		"symfony/console": "^7.2"
+		"symfony/console": "^7.2",
+		"symfony/event-dispatcher": "^7.2"
 	},
 	"config": {
 		"allow-plugins": {

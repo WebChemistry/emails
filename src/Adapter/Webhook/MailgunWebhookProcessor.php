@@ -63,7 +63,7 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 		}
 
 		if ($event === 'opened') {
-			$manager->recordOpenActivity($email, $section);
+			$manager->emailOpened($email, $section);
 		} else if ($event === 'unsubscribed') {
 			$manager->unsubscribe($email, $section);
 		} else if ($event === 'failed' && $severity === 'permanent') {

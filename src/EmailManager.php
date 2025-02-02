@@ -2,21 +2,14 @@
 
 namespace WebChemistry\Emails;
 
+use WebChemistry\Emails\Section\SectionCategory;
+
 interface EmailManager
 {
 
-	public const SectionGlobal = 'global';
 	public const SectionEssential = 'essential';
 
 	public const GlobalCategory = '*';
-
-	public const SuspensionTypeHardBounce = 'hard_bounce';
-	public const SuspensionTypeSoftBounce = 'soft_bounce';
-	public const SuspensionTypeSpamComplaint = 'spam_complaint';
-	public const SuspensionTypeUnsubscribe = 'unsubscribe';
-	public const SuspensionTypeInactivity = 'inactivity';
-	public const SuspensionTypes = ['hard_bounce', 'soft_bounce', 'spam_complaint', 'unsubscribe', 'inactivity'];
-	public const SuspensionResubscribeTypes = ['unsubscribe', 'inactivity'];
 
 	/**
 	 * @param string[]|string $emails
@@ -47,34 +40,16 @@ interface EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function recordOpenActivity(array|string $emails, string $section): void;
+	public function emailOpened(array|string $emails, string $section): void;
 
-	/**
-	 * @param string[]|string $emails
-	 */
-	public function recordSentActivity(array|string $emails, string $section): void;
+	public function beforeEmailSent(EmailRegistry $registry, string $section, string $category = SectionCategory::Global): void;
+
+	public function afterEmailSent(EmailRegistry $registry, string $section, string $category = SectionCategory::Global): void;
 
 	/**
 	 * Checks if the email can be sent to the recipient.
 	 */
 	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool;
-
-
-	/**
-	 * Returns only email accounts that can be delivered.
-	 *
-	 * @param EmailAccount[] $accounts
-	 * @return EmailAccount[]
-	 */
-	public function filterEmailAccountsForDelivery(array $accounts, string $section, string $category = EmailManager::GlobalCategory): array;
-
-	/**
-	 * Returns only emails that can be delivered.
-	 *
-	 * @param string[] $emails
-	 * @return string[]
-	 */
-	public function filterEmailsForDelivery(array $emails, string $section, string $category = EmailManager::GlobalCategory): array;
 
 	/**
 	 * Resets the suspension status, soft bounces, inactivity and unsubscribes.
@@ -82,5 +57,10 @@ interface EmailManager
 	 * @param string[]|string $emails
 	 */
 	public function reset(array|string $emails): void;
+
+	/**
+	 * @param string[]|string $emails
+	 */
+	public function inactive(array|string $emails, string $section): void;
 
 }

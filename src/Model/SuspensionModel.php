@@ -5,6 +5,10 @@ namespace WebChemistry\Emails\Model;
 use Doctrine\DBAL\ArrayParameterType;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\EmailAccount;
+use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\EmailRegistry;
+use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\SuspensionType;
 
 final readonly class SuspensionModel
@@ -18,6 +22,17 @@ final readonly class SuspensionModel
 	{
 	}
 
+	public function beforeEmailSent(BeforeEmailSentEvent $event): void
+	{
+		if ($event->registry->isEmpty()) {
+			return;
+		}
+
+		foreach ($this->getSuspendedEmails($event->registry->getEmails()) as $email) {
+			$event->registry->remove($email);
+		}
+	}
+
 	/**
 	 * @template TKey of array-key
 	 * @param array<TKey, string> $emails
@@ -28,6 +43,26 @@ final readonly class SuspensionModel
 		$suspended = $this->createSuspensionIndex($emails);
 
 		return array_filter($emails, static fn ($email): bool => !isset($suspended[$email]));
+	}
+
+	/**
+	 * @param string[] $emails
+	 * @return iterable<string>
+	 */
+	private function getSuspendedEmails(array $emails): iterable
+	{
+		$connection = $this->connectionAccessor->get();
+
+		$result = $connection->createQueryBuilder()
+			->select('email')
+			->from('email_suspensions')
+			->where('email IN(:emails)')
+			->setParameter('emails', $emails, ArrayParameterType::STRING)
+			->executeQuery();
+
+		while (($value = $result->fetchAssociative()) !== false) {
+			yield $value['email'];
+		}
 	}
 
 	/**

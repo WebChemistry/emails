@@ -5,7 +5,9 @@ namespace WebChemistry\Emails\Model;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\Persistence\ConnectionRegistry;
+use WebChemistry\Emails\Common\PlatformQueryHelper;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
+use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Exception\UnsupportedPlatformException;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
@@ -102,6 +104,27 @@ final readonly class SubscriptionModel
 		return $index;
 	}
 
+	/**
+	 * @param string[] $emails
+	 * @return iterable<string>
+	 */
+	private function getUnsubscribedEmails(array $emails, SectionCategory $category): iterable
+	{
+		$qb = $this->connectionAccessor->get()->createQueryBuilder()
+			->select('email')
+			->from('email_subscriptions')
+			->where('email IN(:emails)');
+
+		$this->addSectionCondition($qb, $category);
+
+		$results = $qb->setParameter('emails', $emails, ArrayParameterType::STRING)
+			->executeQuery();
+
+		while (($result = $results->fetchAssociative()) !== false) {
+			yield $result['email'];
+		}
+	}
+
 	public function isSubscribed(string $email, SectionCategory $category): bool
 	{
 		if (!$category->isUnsubscribable()) {
@@ -196,25 +219,9 @@ final readonly class SubscriptionModel
 			}
 		}
 
-		$this->insert('email_subscriptions', $values, ['email', 'section', 'category'], function (string $platform) use ($type): string {
-			if ($platform === 'mysql') {
-				if ($type === UnsubscribeType::User) {
-					return 'type = new.type, created_at = new.created_at';
-				} else {
-					return 'created_at = new.created_at';
-				}
-			}
+		$fn = PlatformQueryHelper::updateColumns($type === UnsubscribeType::User ? ['type', 'created_at'] : ['created_at']);
 
-			if ($platform === 'sqlite') {
-				if ($type === UnsubscribeType::User) {
-					return 'type = excluded.type, created_at = excluded.created_at';
-				} else {
-					return 'created_at = excluded.created_at';
-				}
-			}
-
-			throw new UnsupportedPlatformException($platform);
-		});
+		$this->insert('email_subscriptions', $values, ['email', 'section', 'category'], $fn);
 	}
 
 	private function addSectionCondition(QueryBuilder $qb, SectionCategory $category): QueryBuilder
@@ -246,6 +253,17 @@ final readonly class SubscriptionModel
 			->setParameter('section', $section->name)
 			->setParameter('type', UnsubscribeType::Inactivity->value)
 			->executeStatement();
+	}
+
+	public function beforeEmailSent(BeforeEmailSentEvent $event): void
+	{
+		if ($event->registry->isEmpty()) {
+			return;
+		}
+
+		foreach ($this->getUnsubscribedEmails($event->registry->getEmails(), $event->category) as $email) {
+			$event->registry->remove($email);
+		}
 	}
 
 	/**

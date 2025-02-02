@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails\Mailer;
 
+use WebChemistry\Emails\EmailAccountRegistry;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\MailerAdapter;
@@ -26,13 +27,19 @@ final readonly class ManagedMailer implements Mailer
 		array $options = [],
 	): void
 	{
-		$recipients = $this->manager->filterEmailAccountsForDelivery($recipients, $section, $category);
+		$this->manager->beforeEmailSent(
+			$registry = new EmailAccountRegistry($recipients),
+			$section,
+			$category,
+		);
 
-		if (!$recipients) {
+		if ($registry->isEmpty()) {
 			return;
 		}
 
-		$this->adapter->send($recipients, $message, $options);
+		$this->adapter->send($registry->getAccounts(), $message, $options);
+
+		$this->manager->afterEmailSent($registry, $section, $category);
 	}
 
 	public function operate(
