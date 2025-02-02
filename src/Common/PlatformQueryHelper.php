@@ -15,7 +15,7 @@ final class PlatformQueryHelper
 	{
 		return static function (string $platform) use ($columns): string {
 			if ($platform === 'mysql') {
-				return implode(', ', array_map(fn (string $column) => sprintf('%s = new.%s', $column, $column), $columns));
+				return implode(', ', array_map(fn (string $column) => sprintf('%s = VALUES(%s)', $column, $column), $columns));
 			}
 
 			if ($platform === 'sqlite') {
