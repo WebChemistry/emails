@@ -4,7 +4,6 @@ namespace WebChemistry\Emails\Subscription;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\UnsubscribeType;
@@ -33,7 +32,7 @@ final class SubscriptionInfo
 
 		$categories = [];
 
-		if (isset($this->index[$this->section->name][EmailManager::GlobalCategory])) {
+		if (isset($this->index[$this->section->name][SectionCategory::Global])) {
 			foreach ($this->section->getCategories() as $category) {
 				$categories[$category->name] = false;
 			}

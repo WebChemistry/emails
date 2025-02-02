@@ -7,6 +7,7 @@ use Tests\SectionEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Model\SubscriptionModel;
+use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
 final class SubscriptionModelTest extends TestCase
@@ -83,7 +84,7 @@ final class SubscriptionModelTest extends TestCase
 				'email' => $this->firstEmail,
 				'section' => 'notifications',
 				'type' => UnsubscribeType::User->value,
-				'category' => EmailManager::GlobalCategory,
+				'category' => SectionCategory::Global,
 			]
 		], $this->databaseSnapshot());
 	}
@@ -125,7 +126,7 @@ final class SubscriptionModelTest extends TestCase
 				'email' => $this->firstEmail,
 				'section' => 'notifications',
 				'type' => UnsubscribeType::User->value,
-				'category' => EmailManager::GlobalCategory,
+				'category' => SectionCategory::Global,
 			]
 		], $this->databaseSnapshot());
 	}
@@ -146,7 +147,7 @@ final class SubscriptionModelTest extends TestCase
 				'email' => $this->firstEmail,
 				'section' => 'notifications',
 				'type' => UnsubscribeType::Inactivity->value,
-				'category' => EmailManager::GlobalCategory,
+				'category' => SectionCategory::Global,
 			],
 		], $this->databaseSnapshot());
 	}
@@ -232,7 +233,7 @@ final class SubscriptionModelTest extends TestCase
 				'email' => $this->firstEmail,
 				'section' => 'notifications',
 				'type' => UnsubscribeType::User->value,
-				'category' => EmailManager::GlobalCategory,
+				'category' => SectionCategory::Global,
 			]
 		], $this->databaseSnapshot());
 	}

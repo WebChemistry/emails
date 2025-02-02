@@ -3,10 +3,10 @@
 namespace WebChemistry\Emails\Mailer;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
+use WebChemistry\Emails\Section\SectionCategory;
 
 final readonly class SelectiveMailer implements Mailer
 {
@@ -28,7 +28,7 @@ final readonly class SelectiveMailer implements Mailer
 		array $recipients,
 		Message $message,
 		string $section,
-		string $category = EmailManager::GlobalCategory,
+		string $category = SectionCategory::Global,
 		array $options = [],
 	): void
 	{

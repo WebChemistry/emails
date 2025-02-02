@@ -47,7 +47,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function unsubscribe(array|string $emails, string $section, string $category = self::GlobalCategory): void
+	public function unsubscribe(array|string $emails, string $section, string $category = SectionCategory::Global): void
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;
 
@@ -58,14 +58,14 @@ final readonly class DefaultEmailManager implements EmailManager
 		}
 	}
 
-	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
+	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string
 	{
 		$category = $this->sections->getCategory($section, $category);
 
 		return $this->getSubscribeManager()->addResubscribeQueryParameter($link, $email, $category);
 	}
 
-	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
+	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string
 	{
 		$category = $this->sections->getCategory($section, $category);
 
@@ -83,7 +83,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		}
 	}
 
-	public function resubscribe(string $email, string $section, string $category = EmailManager::GlobalCategory): void
+	public function resubscribe(string $email, string $section, string $category = SectionCategory::Global): void
 	{
 		$category = $this->sections->getCategory($section, $category);
 
@@ -162,7 +162,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		}
 	}
 
-	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool
+	public function canSend(string $email, string $section, string $category = SectionCategory::Global): bool
 	{
 		$category = $this->sections->getCategory($section, $category);
 

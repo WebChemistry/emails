@@ -2,11 +2,10 @@
 
 namespace WebChemistry\Emails\Mailer;
 
-use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Mailer;
-use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
+use WebChemistry\Emails\Section\SectionCategory;
 
 final readonly class CompoundMailer implements Mailer
 {
@@ -18,7 +17,7 @@ final readonly class CompoundMailer implements Mailer
 	{
 	}
 
-	public function send(array $recipients, Message $message, string $section, string $category = EmailManager::GlobalCategory, array $options = []): void
+	public function send(array $recipients, Message $message, string $section, string $category = SectionCategory::Global, array $options = []): void
 	{
 		$this->transactional->send($recipients, $message, $section, $category, $options);
 	}

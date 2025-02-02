@@ -7,10 +7,6 @@ use WebChemistry\Emails\Section\SectionCategory;
 interface EmailManager
 {
 
-	public const SectionEssential = 'essential';
-
-	public const GlobalCategory = '*';
-
 	/**
 	 * @param string[]|string $emails
 	 */
@@ -19,12 +15,12 @@ interface EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function unsubscribe(array|string $emails, string $section, string $category = self::GlobalCategory): void;
+	public function unsubscribe(array|string $emails, string $section, string $category = SectionCategory::Global): void;
 
 
-	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string;
+	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string;
 
-	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string;
+	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string;
 
 	public function processSubscribeUnsubscribeQueryParameter(string $link): void;
 
@@ -49,7 +45,7 @@ interface EmailManager
 	/**
 	 * Checks if the email can be sent to the recipient.
 	 */
-	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool;
+	public function canSend(string $email, string $section, string $category = SectionCategory::Global): bool;
 
 	/**
 	 * Resets the suspension status, soft bounces, inactivity and unsubscribes.

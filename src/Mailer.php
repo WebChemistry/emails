@@ -2,6 +2,8 @@
 
 namespace WebChemistry\Emails;
 
+use WebChemistry\Emails\Section\SectionCategory;
+
 interface Mailer
 {
 
@@ -13,7 +15,7 @@ interface Mailer
 		array $recipients,
 		Message $message,
 		string $section,
-		string $category = EmailManager::GlobalCategory,
+		string $category = SectionCategory::Global,
 		array $options = [],
 	): void;
 

@@ -3,7 +3,6 @@
 namespace WebChemistry\Emails\Section;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\EmailManager;
 
 final class Sections
 {
@@ -13,17 +12,17 @@ final class Sections
 
 	public function __construct()
 	{
-		$this->sections[EmailManager::SectionEssential] = new Section(EmailManager::SectionEssential, unsubscribable: false);
+		$this->sections[Section::Essential] = new Section(Section::Essential, unsubscribable: false);
 	}
 
 	public function getEssentialCategory(): SectionCategory
 	{
-		return $this->getCategory(EmailManager::SectionEssential);
+		return $this->getCategory(Section::Essential);
 	}
 
 	public function getEssentialSection(): Section
 	{
-		return $this->getSection(EmailManager::SectionEssential);
+		return $this->getSection(Section::Essential);
 	}
 
 	public function add(SectionBlueprint $blueprint): void

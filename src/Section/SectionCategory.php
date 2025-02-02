@@ -2,8 +2,6 @@
 
 namespace WebChemistry\Emails\Section;
 
-use WebChemistry\Emails\EmailManager;
-
 final readonly class SectionCategory
 {
 
@@ -28,10 +26,10 @@ final readonly class SectionCategory
 	 */
 	public function accessMultidimensionalArray(array $array): mixed
 	{
-		if ($this->name === EmailManager::GlobalCategory) {
-			return $array[$this->section->name][EmailManager::GlobalCategory] ?? null;
+		if ($this->name === SectionCategory::Global) {
+			return $array[$this->section->name][SectionCategory::Global] ?? null;
 		} else {
-			return $array[$this->section->name][EmailManager::GlobalCategory] ?? $array[$this->section->name][$this->name] ?? null;
+			return $array[$this->section->name][SectionCategory::Global] ?? $array[$this->section->name][$this->name] ?? null;
 		}
 	}
 

@@ -2,7 +2,7 @@
 
 namespace WebChemistry\Emails\Subscribe;
 
-use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Section\SectionCategory;
 
 final readonly class DecodedUnsubscribeValue
 {
@@ -13,7 +13,7 @@ final readonly class DecodedUnsubscribeValue
 	public function __construct(
 		public string $email,
 		public string $section,
-		public string $category = EmailManager::GlobalCategory,
+		public string $category = SectionCategory::Global,
 		public array $arguments = [],
 	)
 	{
