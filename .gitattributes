@@ -5,3 +5,4 @@
 /LICENSE export-ignore
 /.gitignore export-ignore
 /.gitattributes export-ignore
+/bin export-ignore
