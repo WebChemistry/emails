@@ -3,16 +3,15 @@
 namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
-use Doctrine\Persistence\ConnectionRegistry;
 use Throwable;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
 
 final readonly class SoftBounceModel
 {
 
 	public function __construct(
-		private ConnectionRegistry $registry,
+		private ConnectionAccessor $connectionAccessor,
 		private int $bounceLimit = 3,
 	)
 	{
@@ -23,7 +22,7 @@ final readonly class SoftBounceModel
 	 */
 	public function incrementBounce(string $email): array
 	{
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 		$connection->beginTransaction();
 		$commited = false;
 
@@ -46,7 +45,7 @@ final readonly class SoftBounceModel
 				return [$email];
 			}
 
-			$builder = $this->getConnection()->createQueryBuilder();
+			$builder = $this->connectionAccessor->get()->createQueryBuilder();
 
 			if ($counter === 1) {
 				$builder->insert('email_bounce_counters')
@@ -87,7 +86,7 @@ final readonly class SoftBounceModel
 			return;
 		}
 
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_bounce_counters')
 			->where('email IN(?)')
 			->setParameter(0, $emails, ArrayParameterType::STRING)
@@ -101,13 +100,13 @@ final readonly class SoftBounceModel
 
 	private function _getBounceCount(string $email, bool $lock = false): int
 	{
-		$query = $this->getConnection()->createQueryBuilder();
+		$query = $this->connectionAccessor->get()->createQueryBuilder();
 		$query->from('email_bounce_counters', 'c');
 		$query->select('c.counter');
 		$query->where('c.email = :email');
 		$query->setParameter('email', $email);
 
-		if ($lock && !$this->getConnection()->getDatabasePlatform() instanceof SqlitePlatform) {
+		if ($lock && !$this->connectionAccessor->get()->getDatabasePlatform() instanceof SqlitePlatform) {
 			$query->forUpdate();
 		}
 
@@ -115,15 +114,6 @@ final readonly class SoftBounceModel
 		$key = array_key_first($values);
 
 		return $key === null ? 0 : (int) $values[$key];
-	}
-
-	private function getConnection(): Connection
-	{
-		$connection = $this->registry->getConnection();
-
-		assert($connection instanceof Connection);
-
-		return $connection;
 	}
 
 }

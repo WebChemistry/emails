@@ -17,7 +17,7 @@ final class InactivityModelTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$this->model = new InactivityModel(2, $this->registry);
+		$this->model = new InactivityModel(2, $this->connectionAccessor);
 	}
 
 	public function testNotSent(): void

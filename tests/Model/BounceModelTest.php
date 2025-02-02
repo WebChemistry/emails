@@ -15,7 +15,7 @@ final class BounceModelTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$this->model = new SoftBounceModel($this->registry);
+		$this->model = new SoftBounceModel($this->connectionAccessor);
 	}
 
 	public function testZeroBounce(): void

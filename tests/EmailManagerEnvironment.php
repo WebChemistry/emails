@@ -10,8 +10,6 @@ use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
-use WebChemistry\Emails\Section\Section;
-use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Subscribe\SubscribeManager;
 
 trait EmailManagerEnvironment
@@ -35,11 +33,11 @@ trait EmailManagerEnvironment
 	#[Before(10)]
 	public function setUpWebhook(): void
 	{
-		$this->inactivityModel = new InactivityModel(2, $this->registry);
-		$this->softBounceModel = new SoftBounceModel($this->registry);
-		$this->subscriptionModel = new SubscriptionModel($this->registry);
+		$this->inactivityModel = new InactivityModel(2, $this->connectionAccessor);
+		$this->softBounceModel = new SoftBounceModel($this->connectionAccessor);
+		$this->subscriptionModel = new SubscriptionModel($this->connectionAccessor);
 		$this->unsubscribeManager = new SubscribeManager(new Encoder('secret'));
-		$this->suspensionModel = new SuspensionModel($this->registry);
+		$this->suspensionModel = new SuspensionModel($this->connectionAccessor);
 		$this->manager = new DefaultEmailManager(
 			$this->sections,
 			$this->inactivityModel,

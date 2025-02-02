@@ -3,18 +3,17 @@
 namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\Persistence\ConnectionRegistry;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\Type\SuspensionType;
 
-final class SuspensionModel
+final readonly class SuspensionModel
 {
 
-	use ConnectionModel;
 	use ManipulationModel;
 
 	public function __construct(
-		private ConnectionRegistry $registry,
+		private ConnectionAccessor $connectionAccessor,
 	)
 	{
 	}
@@ -41,7 +40,7 @@ final class SuspensionModel
 			return [];
 		}
 
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 
 		$result = $connection->createQueryBuilder()
 			->select('email')
@@ -61,7 +60,7 @@ final class SuspensionModel
 
 	public function isSuspended(string $email): bool
 	{
-		return (bool) $this->getConnection()->fetchOne(
+		return (bool) $this->connectionAccessor->get()->fetchOne(
 			'SELECT 1 FROM email_suspensions WHERE email = ?',
 			[$email]
 		);
@@ -123,7 +122,7 @@ final class SuspensionModel
 			return [];
 		}
 
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 
 		$result = $connection->createQueryBuilder()
 			->select('email')
@@ -160,7 +159,7 @@ final class SuspensionModel
 	 */
 	public function getReasons(string $email): array
 	{
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 
 		$result = $connection->createQueryBuilder()
 			->select('type')
@@ -191,7 +190,7 @@ final class SuspensionModel
 			$types[] = SuspensionType::HardBounce->value;
 		}
 
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_suspensions')
 			->where('email IN(:emails)')
 			->andWhere('type IN(:types)')
@@ -205,7 +204,7 @@ final class SuspensionModel
 	 */
 	public function reset(array|string $emails): void
 	{
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_suspensions')
 			->where('email IN(:emails)')
 			->setParameter('emails', is_string($emails) ? [$emails] : $emails, ArrayParameterType::STRING)

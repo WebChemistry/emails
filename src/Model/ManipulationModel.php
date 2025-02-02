@@ -9,8 +9,6 @@ use LogicException;
 trait ManipulationModel
 {
 
-	use ConnectionModel;
-
 	/**
 	 * @param array<array<string, string|int>> $values
 	 * @param string|non-empty-list<string> $conflictColumns
@@ -22,7 +20,7 @@ trait ManipulationModel
 			return;
 		}
 
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 		$platform = $connection->getDatabasePlatform();
 		$conflictColumns = is_string($conflictColumns) ? [$conflictColumns] : $conflictColumns;
 

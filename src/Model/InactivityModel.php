@@ -3,18 +3,17 @@
 namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\Persistence\ConnectionRegistry;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Section\Section;
 
 final readonly class InactivityModel
 {
 
-	use ConnectionModel;
 	use ManipulationModel;
 
 	public function __construct(
 		private int $maxInactivity,
-		private ConnectionRegistry $registry,
+		private ConnectionAccessor $connectionAccessor,
 	)
 	{
 	}
@@ -45,7 +44,7 @@ final readonly class InactivityModel
 
 	public function getCount(string $email, Section $section): int
 	{
-		return (int) $this->getConnection()->fetchOne(
+		return (int) $this->connectionAccessor->get()->fetchOne(
 			'SELECT counter FROM email_inactivity_counters WHERE email = ? AND section = ?',
 			[$email, $section->name],
 		);
@@ -62,7 +61,7 @@ final readonly class InactivityModel
 			return;
 		}
 
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_inactivity_counters')
 			->where('email IN(?)')
 			->setParameter(0, $emails, ArrayParameterType::STRING)
@@ -80,7 +79,7 @@ final readonly class InactivityModel
 			return;
 		}
 
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_inactivity_counters')
 			->where('email IN(?)')
 			->andWhere('section = ?')
@@ -94,7 +93,7 @@ final readonly class InactivityModel
 	 */
 	private function getInactiveEmails(string $section): array
 	{
-		$connection = $this->getConnection();
+		$connection = $this->connectionAccessor->get();
 
 		$result = $connection->createQueryBuilder()
 			->select('email')

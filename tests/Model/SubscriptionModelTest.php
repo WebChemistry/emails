@@ -19,7 +19,7 @@ final class SubscriptionModelTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$this->model = new SubscriptionModel($this->registry);
+		$this->model = new SubscriptionModel($this->connectionAccessor);
 	}
 
 	public function testInitialState(): void

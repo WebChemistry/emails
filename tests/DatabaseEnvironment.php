@@ -9,6 +9,8 @@ use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\AfterClass;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\BeforeClass;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
+use WebChemistry\Emails\Connection\DefaultConnectionAccessor;
 
 trait DatabaseEnvironment
 {
@@ -17,7 +19,7 @@ trait DatabaseEnvironment
 	private static Connection $_connection;
 
 	private Connection $connection;
-	private ConnectionRegistry $registry;
+	private ConnectionAccessor $connectionAccessor;
 
 	#[BeforeClass]
 	public static function before(): void
@@ -66,7 +68,7 @@ trait DatabaseEnvironment
 	public function setUpDatabase(): void
 	{
 		$this->connection = self::$_connection;
-		$this->registry = self::$_registry;
+		$this->connectionAccessor = new DefaultConnectionAccessor(self::$_registry);
 
 		$this->connection->beginTransaction();
 	}

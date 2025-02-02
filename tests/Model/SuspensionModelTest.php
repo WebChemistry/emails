@@ -16,7 +16,7 @@ final class SuspensionModelTest extends TestCase
 
 	protected function setUp(): void
 	{
-		$this->model = new SuspensionModel($this->registry);
+		$this->model = new SuspensionModel($this->connectionAccessor);
 	}
 
 	public function testNoSuspensions(): void

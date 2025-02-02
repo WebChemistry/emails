@@ -5,20 +5,20 @@ namespace WebChemistry\Emails\Model;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\Persistence\ConnectionRegistry;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Exception\UnsupportedPlatformException;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Subscription\SubscriptionInfo;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
-final class SubscriptionModel
+final readonly class SubscriptionModel
 {
 
-	use ConnectionModel;
 	use ManipulationModel;
 
 	public function __construct(
-		private ConnectionRegistry $registry,
+		private ConnectionAccessor $connectionAccessor,
 	)
 	{
 	}
@@ -48,7 +48,7 @@ final class SubscriptionModel
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;
 
-		$qb = $this->getConnection()->createQueryBuilder()
+		$qb = $this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_subscriptions')
 			->where('email IN(:emails)')
 			->setParameter('emails', $emails, ArrayParameterType::STRING);
@@ -83,7 +83,7 @@ final class SubscriptionModel
 			return [];
 		}
 
-		$qb = $this->getConnection()->createQueryBuilder()
+		$qb = $this->connectionAccessor->get()->createQueryBuilder()
 			->select('email')
 			->from('email_subscriptions')
 			->where('email IN(:emails)');
@@ -108,7 +108,7 @@ final class SubscriptionModel
 			return true;
 		}
 
-		$qb = $this->getConnection()->createQueryBuilder()
+		$qb = $this->connectionAccessor->get()->createQueryBuilder()
 			->select('1')
 			->from('email_subscriptions')
 			->where('email = :email')
@@ -122,7 +122,7 @@ final class SubscriptionModel
 	public function getInfo(string $email, Section $section): SubscriptionInfo
 	{
 		/** @var array{ section: string, category: string, type: string, created_at: string }[] $results */
-		$results = $this->getConnection()->createQueryBuilder()
+		$results = $this->connectionAccessor->get()->createQueryBuilder()
 			->select('section, category, type, created_at')
 			->from('email_subscriptions')
 			->where('email = :email')
@@ -141,7 +141,7 @@ final class SubscriptionModel
 		if ($category->isGlobal()) {
 			$this->reset($email, $category->section);
 		} else {
-			$this->getConnection()->createQueryBuilder()
+			$this->connectionAccessor->get()->createQueryBuilder()
 				->delete('email_subscriptions')
 				->where('email = :email AND section = :section AND category = :category')
 				->setParameter('email', $email)
@@ -239,7 +239,7 @@ final class SubscriptionModel
 	{
 		$emails = is_string($email) ? [$email] : $email;
 
-		$this->getConnection()->createQueryBuilder()
+		$this->connectionAccessor->get()->createQueryBuilder()
 			->delete('email_subscriptions')
 			->where('email IN(:emails) AND section = :section AND type = :type')
 			->setParameter('emails', $emails, ArrayParameterType::STRING)
