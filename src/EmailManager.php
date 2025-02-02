@@ -6,8 +6,9 @@ interface EmailManager
 {
 
 	public const SectionGlobal = 'global';
-	public const SectionTransactional = 'transactional';
-	public const SectionMarketing = 'marketing';
+	public const SectionEssential = 'essential';
+
+	public const GlobalCategory = '*';
 
 	public const SuspensionTypeHardBounce = 'hard_bounce';
 	public const SuspensionTypeSoftBounce = 'soft_bounce';
@@ -25,9 +26,14 @@ interface EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function unsubscribe(array|string $emails, string $section): void;
+	public function unsubscribe(array|string $emails, string $section, string $category = self::GlobalCategory): void;
 
-	public function processSubscriptionLink(string $link): void;
+
+	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string;
+
+	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string;
+
+	public function processSubscribeUnsubscribeQueryParameter(string $link): void;
 
 	public function resubscribe(string $email, string $section): void;
 
@@ -49,21 +55,32 @@ interface EmailManager
 	public function recordSentActivity(array|string $emails, string $section): void;
 
 	/**
-	 * @return string[]
+	 * Checks if the email can be sent to the recipient.
 	 */
-	public function getSuspensionReasons(string $email, string $section): array;
+	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool;
 
-	public function isSuspended(string $email, string $section): bool;
 
 	/**
+	 * Returns only email accounts that can be delivered.
+	 *
 	 * @param EmailAccount[] $accounts
 	 * @return EmailAccount[]
 	 */
-	public function clearFromSuspendedAccounts(array $accounts, string $section): array;
+	public function filterEmailAccountsForDelivery(array $accounts, string $section, string $category = EmailManager::GlobalCategory): array;
 
 	/**
+	 * Returns only emails that can be delivered.
+	 *
+	 * @param string[] $emails
+	 * @return string[]
+	 */
+	public function filterEmailsForDelivery(array $emails, string $section, string $category = EmailManager::GlobalCategory): array;
+
+	/**
+	 * Resets the suspension status, soft bounces, inactivity and unsubscribes.
+	 *
 	 * @param string[]|string $emails
 	 */
-	public function clearRecords(array|string $emails): void;
+	public function reset(array|string $emails): void;
 
 }

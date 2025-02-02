@@ -9,7 +9,7 @@ use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\OperationType;
 
-final readonly class MailerliteMailer extends AbstractMailer
+final readonly class MailerliteAdapter extends AbstractAdapter
 {
 
 	public const Autoresponders = 'autoresponders';

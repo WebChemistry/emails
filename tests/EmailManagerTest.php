@@ -3,7 +3,6 @@
 namespace Tests;
 
 use WebChemistry\Emails\EmailAccount;
-use WebChemistry\Emails\EmailManager;
 
 final class EmailManagerTest extends TestCase
 {
@@ -12,57 +11,82 @@ final class EmailManagerTest extends TestCase
 
 	public function testSuccessfulUnsubscribe(): void
 	{
-		$link = $this->unsubscribeManager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail);
+		$link = $this->manager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
 
-		$this->manager->processSubscriptionLink($link);
+		$this->manager->processSubscribeUnsubscribeQueryParameter($link);
 
-		$this->assertSame([EmailManager::SuspensionTypeUnsubscribe], $this->subscriberModel->getReasons($this->firstEmail));
+		$this->assertFalse($this->manager->canSend($this->firstEmail, 'notifications'));
 	}
 
-	public function testSuccessfulSectionUnsubscribe(): void
+	public function testSuccessfulResubscribe(): void
 	{
-		$link = $this->unsubscribeManager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail, EmailManager::SectionTransactional);
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+		$link = $this->manager->addResubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
 
-		$this->manager->processSubscriptionLink($link);
+		$this->manager->processSubscribeUnsubscribeQueryParameter($link);
 
-		$this->assertSame([EmailManager::SuspensionTypeUnsubscribe], $this->subscriberModel->getReasons($this->firstEmail, EmailManager::SectionTransactional));
-		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
+		$this->assertTrue($this->manager->canSend($this->firstEmail, 'notifications'));
 	}
 
 	public function testUnsuccessfulUnsubscribe(): void
 	{
-		$link = $this->unsubscribeManager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail);
+		$link = $this->manager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
 
-		$this->manager->processSubscriptionLink(substr($link, 0, -1));
+		$this->manager->processSubscribeUnsubscribeQueryParameter(substr($link, 0, -1));
 
-		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
+		$this->assertTrue($this->manager->canSend($this->firstEmail, 'notifications'));
 	}
 
-	public function testClear(): void
+	public function testReset(): void
 	{
-		$this->subscriberModel->unsubscribe($this->firstEmail, EmailManager::SuspensionTypeUnsubscribe);
-		$this->subscriberModel->unsubscribe($this->firstEmail, EmailManager::SuspensionTypeInactivity);
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
 
 		$this->manager->softBounce($this->firstEmail);
 		$this->manager->hardBounce($this->firstEmail);
 
-		$this->manager->clearRecords($this->firstEmail);
+		$this->manager->reset($this->firstEmail);
 
-		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
+		$this->assertTrue($this->manager->canSend($this->firstEmail, 'notifications'));
 		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
 	}
 
-	public function testClearSuspended(): void
+	public function testEmailAccountsForDelivery(): void
 	{
 		$this->manager->spamComplaint($this->firstEmail);
 
-		$accounts = $this->manager->clearFromSuspendedAccounts([
+		$accounts = $this->manager->filterEmailAccountsForDelivery([
 			new EmailAccount($this->firstEmail),
 			new EmailAccount($this->secondEmail),
-		], EmailManager::SectionTransactional);
+		], 'notifications');
 
 		$this->assertCount(1, $accounts);
 		$this->assertEquals($this->secondEmail, $accounts[0]->email);
+	}
+
+	public function testEmailAccountsForDeliveryEmailIsUnsubscribed(): void
+	{
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+
+		$accounts = $this->manager->filterEmailAccountsForDelivery([
+			new EmailAccount($this->firstEmail),
+			new EmailAccount($this->secondEmail),
+		], 'notifications');
+
+		$this->assertCount(1, $accounts);
+		$this->assertEquals($this->secondEmail, $accounts[0]->email);
+	}
+
+	public function testEmailsForDelivery(): void
+	{
+		$this->manager->spamComplaint($this->firstEmail);
+
+		$accounts = $this->manager->filterEmailsForDelivery([
+			$this->firstEmail,
+			$this->secondEmail,
+		], 'notifications');
+
+		$this->assertCount(1, $accounts);
+		$this->assertEquals($this->secondEmail, $accounts[0]);
 	}
 
 }

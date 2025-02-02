@@ -2,20 +2,14 @@
 
 namespace WebChemistry\Emails;
 
-interface Mailer
+interface MailerAdapter
 {
 
 	/**
 	 * @param EmailAccount[] $recipients
 	 * @param mixed[] $options Mailer specific options
 	 */
-	public function send(
-		array $recipients,
-		Message $message,
-		string $section,
-		string $category = EmailManager::GlobalCategory,
-		array $options = [],
-	): void;
+	public function send(array $recipients, Message $message, array $options = []): void;
 
 	/**
 	 * @param EmailAccount[] $accounts

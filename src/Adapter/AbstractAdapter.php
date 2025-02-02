@@ -4,11 +4,11 @@ namespace WebChemistry\Emails\Adapter;
 
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\Exception\NotSupportedException;
-use WebChemistry\Emails\Mailer;
+use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 
-readonly abstract class AbstractMailer implements Mailer
+readonly abstract class AbstractAdapter implements MailerAdapter
 {
 
 	/**

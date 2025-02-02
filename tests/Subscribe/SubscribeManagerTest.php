@@ -23,92 +23,95 @@ final class SubscribeManagerTest extends TestCase
 
 	public function testUnsubscribeLink(): void
 	{
-		$hash = 'u=v1.b.00aa103ab72126599c49578b792075c1b3eb71354162c78ea881cd9ce402835bdGVzdEBleGFtcGxlLmNvbQ';
+		$hash = 'u=v1.b.0b9df7821514fafc2dd3ec85b912c30fcd2599ad3bb13155496a19a303ee2194dGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw';
 		$expected = 'http://example.com/unsubscribe?' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications'),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, 'notifications'),
 		);
 
 		$expected = 'http://example.com/unsubscribe?id=12&' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, 'notifications'),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, 'notifications'),
 		);
 	}
 
 	public function testResubscribeLink(): void
 	{
-		$hash = 'r=v1.b.00aa103ab72126599c49578b792075c1b3eb71354162c78ea881cd9ce402835bdGVzdEBleGFtcGxlLmNvbQ';
+		$hash = 'r=v1.b.0b9df7821514fafc2dd3ec85b912c30fcd2599ad3bb13155496a19a303ee2194dGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw';
 		$expected = 'http://example.com/unsubscribe?' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications'),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, 'notifications'),
 		);
 
 		$expected = 'http://example.com/unsubscribe?id=12&' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, 'notifications'),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, 'notifications'),
 		);
 	}
 
-	public function testLinkGenerationWithSection(): void
+	public function testLinkGenerationWithCategory(): void
 	{
 		$this->assertSame(
-			$expected = 'http://example.com/unsubscribe?u=v1.b.d449b1b40491bbb871755a52c8a576353ac313c501209b18f24c649df3557c7fdGVzdEBleGFtcGxlLmNvbQ.c2VjdGlvbg',
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'section'),
+			$expected = 'http://example.com/unsubscribe?u=v1.b.ab50c6a053366d0431424f4149408565be4d6cac7f381a3cdfde3173eef761dbdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ',
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article'),
 		);
 
 		$this->assertEquals(new DecodedUnsubscribeValue(
 			$this->firstEmail,
-			'section',
+			'notifications',
+			'article',
 		), $this->manager->loadUnsubscribeQueryParameter($expected));
 	}
 
 	public function testResubscribeLoadWithParameters(): void
 	{
 		$this->assertSame(
-			$expected = 'http://example.com/unsubscribe?r=v1.b.d449b1b40491bbb871755a52c8a576353ac313c501209b18f24c649df3557c7fdGVzdEBleGFtcGxlLmNvbQ.c2VjdGlvbg',
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'section'),
+			$expected = 'http://example.com/unsubscribe?r=v1.b.ab50c6a053366d0431424f4149408565be4d6cac7f381a3cdfde3173eef761dbdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ',
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article'),
 		);
 
 		$this->assertEquals(new DecodedResubscribeValue(
 			$this->firstEmail,
-			'section',
+			'notifications',
+			'article',
 		), $this->manager->loadResubscribeQueryParameter($expected));
 	}
 
 	public function testLinkGenerationWithSectionAndNulls(): void
 	{
 		$this->assertSame(
-			$expected = 'http://example.com/unsubscribe?u=v1.b.f3c4560b1f879b5a0caca0febd572fe2c516b23faa9baf04134e22c4b005dd72dGVzdEBleGFtcGxlLmNvbQ.c2VjdGlvbg..Zm9v',
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'section', null, 'foo'),
+			$expected = 'http://example.com/unsubscribe?u=v1.b.1ea0f86ce537f05aa4a251f12ef3b2d81e65ce442623e720b124555276a584afdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ..Zm9v',
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article', null, 'foo'),
 		);
 
 		$this->assertEquals(new DecodedUnsubscribeValue(
 			$this->firstEmail,
-			'section',
+			'notifications',
+			'article',
 			[null, 'foo'],
 		), $this->manager->loadUnsubscribeQueryParameter($expected));
 	}
@@ -117,21 +120,22 @@ final class SubscribeManagerTest extends TestCase
 	{
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?u=foo', $this->firstEmail);
+		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?u=foo', $this->firstEmail, 'notifications');
 	}
 
 	public function testParameterAlreadyExists2(): void
 	{
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=42&u=foo', $this->firstEmail);
+		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=42&u=foo', $this->firstEmail, 'notifications');
 	}
 
 	public function testGetting(): void
 	{
-		$link = 'http://example.com/unsubscribe?u=v1.b.00aa103ab72126599c49578b792075c1b3eb71354162c78ea881cd9ce402835bdGVzdEBleGFtcGxlLmNvbQ';
+		$link = 'http://example.com/unsubscribe?u=v1.b.0b9df7821514fafc2dd3ec85b912c30fcd2599ad3bb13155496a19a303ee2194dGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw';
 		$this->assertEquals(new DecodedUnsubscribeValue(
 			$this->firstEmail,
+			'notifications',
 		), $this->manager->loadUnsubscribeQueryParameter($link));
 
 		$this->assertNull($this->manager->loadUnsubscribeQueryParameter('http://example.com/unsubscribe'));

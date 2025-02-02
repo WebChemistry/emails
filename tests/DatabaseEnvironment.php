@@ -27,7 +27,8 @@ trait DatabaseEnvironment
 		self::$_connection->executeStatement(
 			'CREATE TABLE IF NOT EXISTS email_bounce_counters (email VARCHAR(255) PRIMARY KEY, counter INT);' .
 			'CREATE TABLE IF NOT EXISTS email_inactivity_counters (email VARCHAR(255), section VARCHAR(255), counter INT, PRIMARY KEY(email, section));' .
-			'CREATE TABLE IF NOT EXISTS email_suspensions (email VARCHAR(255), type VARCHAR(255), section VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, type, section));'
+			'CREATE TABLE IF NOT EXISTS email_suspensions (email VARCHAR(255), type VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, type));' .
+			'CREATE TABLE IF NOT EXISTS email_subscriptions (email VARCHAR(255), section VARCHAR(255), category VARCHAR(255), type VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, section, category));'
 		);
 
 		self::$_registry = new class(self::$_connection) implements ConnectionRegistry {

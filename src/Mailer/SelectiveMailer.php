@@ -1,21 +1,21 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Adapter;
+namespace WebChemistry\Emails\Mailer;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\MailerAdapter;
+use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 
-final readonly class SelectiveMailer implements MailerAdapter
+final readonly class SelectiveMailer implements Mailer
 {
+	public const OptionKey = 'select';
 
-	public const OptionKey = 'section';
-
-	private MailerAdapter $defaultMailer;
+	private Mailer $defaultMailer;
 
 	/**
-	 * @param array<string, MailerAdapter> $mailers
+	 * @param array<string, Mailer> $mailers
 	 */
 	public function __construct(
 		private array $mailers,
@@ -24,17 +24,25 @@ final readonly class SelectiveMailer implements MailerAdapter
 		$this->defaultMailer = $this->mailers['default'] ?? throw new InvalidArgumentException('Default mailer not found.');
 	}
 
-	public function send(array $recipients, Message $message, array $options = []): void
+	public function send(
+		array $recipients,
+		Message $message,
+		string $section,
+		string $category = EmailManager::GlobalCategory,
+		array $options = [],
+	): void
 	{
-		if (!isset($options[self::OptionKey])) {
-			$this->defaultMailer->send($recipients, $message, $options);
-		} else {
+		if (isset($options[self::OptionKey])) {
 			$mailer = $this->mailers[$options[self::OptionKey]] ?? throw new InvalidArgumentException(
 				sprintf('Mailer %s not found, possible mailers: %s', $options[self::OptionKey], implode(', ', array_keys($this->mailers))),
 			);
-
-			$mailer->send($recipients, $message, $options);
+		} else if (isset($this->mailers[$section])) {
+			$mailer = $this->mailers[$section];
+		} else {
+			$mailer = $this->defaultMailer;
 		}
+
+		$mailer->send($recipients, $message, $section, $category, $options);
 	}
 
 	public function operate(

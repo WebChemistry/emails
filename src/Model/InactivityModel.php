@@ -4,7 +4,7 @@ namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ConnectionRegistry;
-use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Section\Sections;
 
 final readonly class InactivityModel
 {
@@ -15,7 +15,7 @@ final readonly class InactivityModel
 	public function __construct(
 		private int $maxInactivity,
 		private ConnectionRegistry $registry,
-		private SubscriberModel $subscriberModel,
+		private Sections $sections,
 	)
 	{
 	}
@@ -24,8 +24,10 @@ final readonly class InactivityModel
 	 * @param string|string[] $emails
 	 * @return string[]
 	 */
-	public function incrementCounter(string|array $emails, string $section = EmailManager::SectionGlobal): array
+	public function incrementCounter(string|array $emails, string $section): array
 	{
+		$this->sections->validateSection($section);
+
 		$emails = is_string($emails) ? [$emails] : $emails;
 
 		if (!$emails) {
@@ -41,13 +43,13 @@ final readonly class InactivityModel
 
 		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section), $section);
 
-		$this->subscriberModel->unsubscribe($inactiveEmails, EmailManager::SuspensionTypeInactivity, $section);
-
 		return $inactiveEmails;
 	}
 
-	public function getCount(string $email, string $section = EmailManager::SectionGlobal): int
+	public function getCount(string $email, string $section): int
 	{
+		$this->sections->validateSection($section);
+
 		return (int) $this->getConnection()->fetchOne(
 			'SELECT counter FROM email_inactivity_counters WHERE email = ? AND section = ?',
 			[$email, $section],
@@ -75,8 +77,10 @@ final readonly class InactivityModel
 	/**
 	 * @param string|string[] $emails
 	 */
-	public function resetCounter(string|array $emails, string $section = EmailManager::SectionGlobal): void
+	public function resetCounter(string|array $emails, string $section): void
 	{
+		$this->sections->validateSection($section);
+
 		$emails = is_string($emails) ? [$emails] : $emails;
 
 		if (!$emails) {

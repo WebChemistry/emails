@@ -6,12 +6,12 @@ use Nette\Utils\FileSystem;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\HtmlMessage;
-use WebChemistry\Emails\Mailer;
+use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 use WebChemistry\Emails\TemplateMessage;
 
-final readonly class FileMailer implements Mailer
+final readonly class FileAdapter implements MailerAdapter
 {
 
 	public function __construct(

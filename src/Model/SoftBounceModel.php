@@ -7,14 +7,12 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\Persistence\ConnectionRegistry;
 use Throwable;
-use WebChemistry\Emails\EmailManager;
 
 final readonly class SoftBounceModel
 {
 
 	public function __construct(
 		private ConnectionRegistry $registry,
-		private SubscriberModel $subscriberModel,
 		private int $bounceLimit = 3,
 	)
 	{
@@ -40,8 +38,6 @@ final readonly class SoftBounceModel
 					$this->resetBounce($email);
 				} catch (Throwable $exception) {
 				}
-
-				$this->subscriberModel->unsubscribe($email, EmailManager::SuspensionTypeSoftBounce);
 
 				if (isset($exception)) {
 					throw $exception;

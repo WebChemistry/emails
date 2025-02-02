@@ -2,16 +2,16 @@
 
 namespace WebChemistry\Emails\Adapter;
 
-use WebChemistry\Emails\Mailer;
+use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 
-final readonly class CompoundMailer implements Mailer
+final readonly class CompoundMailer implements MailerAdapter
 {
 
 	public function __construct(
-		private Mailer $transactional,
-		private Mailer $marketing,
+		private MailerAdapter $transactional,
+		private MailerAdapter $marketing,
 	)
 	{
 	}

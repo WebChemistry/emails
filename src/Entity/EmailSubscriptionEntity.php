@@ -5,25 +5,35 @@ namespace WebChemistry\Emails\Entity;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
+use WebChemistry\Emails\Section\SectionConfig;
 use WebChemistry\Emails\Type\SuspensionType;
+use WebChemistry\Emails\Type\UnsubscribeType;
 
-trait EmailSuspensionEntity // @phpstan-ignore trait.unused
+trait EmailSubscriptionEntity // @phpstan-ignore trait.unused
 {
 
-	public const TableName = 'email_suspensions';
+	public const TableName = 'email_subscriptions';
 
 	#[Id]
 	#[Column(type: 'string', length: 255)]
 	private string $email;
 
 	#[Id]
-	#[Column(type: 'string', length: 14, enumType: SuspensionType::class)]
-	private SuspensionType $type;
+	#[Column(type: 'string', length: SectionConfig::MaxLength)]
+	private string $section;
+
+	#[Id]
+	#[Column(type: 'string', length: SectionConfig::MaxLength)]
+	private string $category;
+
+	#[Id]
+	#[Column(type: 'string', length: 10, enumType: SuspensionType::class)]
+	private UnsubscribeType $type;
 
 	#[Column(type: 'datetime_immutable')]
 	private DateTimeImmutable $createdAt;
 
-	public function __construct(string $email, SuspensionType $type)
+	public function __construct(string $email, UnsubscribeType $type)
 	{
 		$this->email = $email;
 		$this->type = $type;
@@ -35,7 +45,7 @@ trait EmailSuspensionEntity // @phpstan-ignore trait.unused
 		return $this->email;
 	}
 
-	public function getType(): SuspensionType
+	public function getType(): UnsubscribeType
 	{
 		return $this->type;
 	}

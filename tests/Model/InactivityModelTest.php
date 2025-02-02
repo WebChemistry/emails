@@ -5,7 +5,8 @@ namespace Tests\Model;
 use Tests\DatabaseEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\Model\InactivityModel;
-use WebChemistry\Emails\Model\SubscriberModel;
+use WebChemistry\Emails\Section\SectionConfig;
+use WebChemistry\Emails\Section\Sections;
 
 final class InactivityModelTest extends TestCase
 {
@@ -14,81 +15,78 @@ final class InactivityModelTest extends TestCase
 
 	private InactivityModel $model;
 
-	private SubscriberModel $subscriberModel;
-
 	protected function setUp(): void
 	{
-		$this->subscriberModel = new SubscriberModel($this->registry);
-		$this->model = new InactivityModel(2, $this->registry, $this->subscriberModel);
+		$sections = new Sections();
+		$sections->addSection(new SectionConfig('notifications', ['article', 'mention']));
+		$sections->addSection(new SectionConfig('diff'));
+		$this->model = new InactivityModel(2, $this->registry, $sections);
 	}
 
 	public function testNotSent(): void
 	{
-		$this->assertSame(0, $this->model->getCount($this->firstEmail));
+		$this->assertSame(0, $this->model->getCount($this->firstEmail, 'notifications'));
 	}
 
 	public function testFirstSent(): void
 	{
-		$this->model->incrementCounter($this->firstEmail);
+		$inactive = $this->model->incrementCounter($this->firstEmail, 'notifications');
 
-		$this->assertSame(1, $this->model->getCount($this->firstEmail));
+		$this->assertSame(1, $this->model->getCount($this->firstEmail, 'notifications'));
+		$this->assertSame([], $inactive);
 	}
 
 	public function testSecondSent(): void
 	{
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->incrementCounter($this->firstEmail);
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$inactive = $this->model->incrementCounter($this->firstEmail, 'notifications');
 
-		$this->assertSame(2, $this->model->getCount($this->firstEmail));
+		$this->assertSame(2, $this->model->getCount($this->firstEmail, 'notifications'));
+		$this->assertSame([], $inactive);
 	}
 
 	public function testFinalSent(): void
 	{
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->incrementCounter($this->firstEmail);
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$inactive = $this->model->incrementCounter($this->firstEmail, 'notifications');
 
-		$this->assertSame(0, $this->model->getCount($this->firstEmail));
-		$this->assertTrue($this->subscriberModel->isSuspended($this->firstEmail));
-		$this->assertSame(['inactivity'], $this->subscriberModel->getReasons($this->firstEmail));
-	}
-
-	public function testFinalSentDifferentSection(): void
-	{
-		$this->model->incrementCounter($this->firstEmail, 'section');
-		$this->model->incrementCounter($this->firstEmail, 'section');
-		$this->model->incrementCounter($this->firstEmail, 'section');
-
-		$this->assertSame(0, $this->model->getCount($this->firstEmail, 'section'));
-		$this->assertFalse($this->subscriberModel->isSuspended($this->firstEmail));
-		$this->assertTrue($this->subscriberModel->isSuspended($this->firstEmail, 'section'));
-		$this->assertSame([], $this->subscriberModel->getReasons($this->firstEmail));
-		$this->assertSame(['inactivity'], $this->subscriberModel->getReasons($this->firstEmail, 'section'));
+		$this->assertSame([$this->firstEmail], $inactive);
+		$this->assertSame(0, $this->model->getCount($this->firstEmail, 'notifications'));
 	}
 
 	public function testSecondSentDifferentSection(): void
 	{
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->incrementCounter($this->firstEmail, 'section');
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$this->model->incrementCounter($this->firstEmail, 'diff');
 
-		$this->assertSame(2, $this->model->getCount($this->firstEmail));
+		$this->assertSame(2, $this->model->getCount($this->firstEmail, 'notifications'));
 	}
 
-	public function testMultipleSent(): void
+	public function testMultipleEmails(): void
 	{
-		$this->model->incrementCounter([$this->firstEmail, $this->secondEmail]);
+		$this->model->incrementCounter([$this->firstEmail, $this->secondEmail], 'notifications');
 
-		$this->assertSame(1, $this->model->getCount($this->firstEmail));
-		$this->assertSame(1, $this->model->getCount($this->secondEmail));
+		$this->assertSame(1, $this->model->getCount($this->firstEmail, 'notifications'));
+		$this->assertSame(1, $this->model->getCount($this->secondEmail, 'notifications'));
+	}
+
+	public function testMultipleEmailsFinalSent(): void
+	{
+		$this->model->incrementCounter([$this->firstEmail, $this->secondEmail], 'notifications');
+		$this->model->incrementCounter([$this->firstEmail, $this->secondEmail], 'notifications');
+		$inactive = $this->model->incrementCounter([$this->firstEmail, $this->secondEmail], 'notifications');
+
+		$this->assertSame([$this->firstEmail, $this->secondEmail], $inactive);
 	}
 
 	public function testResetCounter(): void
 	{
-		$this->model->incrementCounter($this->firstEmail);
-		$this->model->resetCounter($this->firstEmail);
+		$this->model->incrementCounter($this->firstEmail, 'notifications');
+		$this->model->resetCounter($this->firstEmail, 'notifications');
 
-		$this->assertSame(0, $this->model->getCount($this->firstEmail));
+		$this->assertSame(0, $this->model->getCount($this->firstEmail, 'notifications'));
 	}
 
 }

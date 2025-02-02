@@ -11,7 +11,7 @@ use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\TemplateMessage;
 
-final readonly class ElasticEmailMailer extends AbstractMailer
+final readonly class ElasticEmailAdapter extends AbstractAdapter
 {
 
 	public function __construct(

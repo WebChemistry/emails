@@ -5,12 +5,15 @@ namespace WebChemistry\Emails;
 use LogicException;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
-use WebChemistry\Emails\Model\SubscriberModel;
+use WebChemistry\Emails\Model\SubscriptionModel;
+use WebChemistry\Emails\Model\SuspensionModel;
 use WebChemistry\Emails\Subscribe\DecodedResubscribeValue;
 use WebChemistry\Emails\Subscribe\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Subscribe\SubscribeManager;
+use WebChemistry\Emails\Type\SuspensionType;
+use WebChemistry\Emails\Type\UnsubscribeType;
 
-final class DefaultEmailManager implements EmailManager
+final readonly class DefaultEmailManager implements EmailManager
 {
 
 	public const SectionGlobal = 'global';
@@ -27,8 +30,9 @@ final class DefaultEmailManager implements EmailManager
 
 	public function __construct(
 		private InactivityModel $inactivityModel,
-		private SubscriberModel $subscriberModel,
 		private SoftBounceModel $softBounceModel,
+		private SubscriptionModel $subscriptionModel,
+		private SuspensionModel $suspensionModel,
 		private ?SubscribeManager $subscribeManager = null,
 	)
 	{
@@ -39,25 +43,36 @@ final class DefaultEmailManager implements EmailManager
 	 */
 	public function hardBounce(array|string $emails): void
 	{
-		$this->subscriberModel->unsubscribe($emails, self::SuspensionTypeHardBounce);
-		$this->reset($emails);
+		$this->suspensionModel->suspend($emails, SuspensionType::HardBounce);
+
+		$this->resetSoftBouncesAndInactivity($emails);
 	}
 
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function unsubscribe(array|string $emails, string $section): void
+	public function unsubscribe(array|string $emails, string $section, string $category = self::GlobalCategory): void
 	{
-		$this->subscriberModel->unsubscribe($emails, self::SuspensionTypeUnsubscribe, $section);
+		$emails = is_string($emails) ? [$emails] : $emails;
+
+		foreach ($emails as $email) {
+			$this->subscriptionModel->unsubscribe($email, UnsubscribeType::User, $section, $category);
+		}
 	}
 
-	public function processSubscriptionLink(string $link): void
+	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
 	{
-		if (!$this->subscribeManager) {
-			throw new LogicException('SubscribeManager is not set.');
-		}
+		return $this->getSubscribeManager()->addResubscribeQueryParameter($link, $email, $section, $category);
+	}
 
-		$value = $this->subscribeManager->loadQueryParameter($link);
+	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
+	{
+		return $this->getSubscribeManager()->addUnsubscribeQueryParameter($link, $email, $section, $category);
+	}
+
+	public function processSubscribeUnsubscribeQueryParameter(string $link): void
+	{
+		$value = $this->getSubscribeManager()->loadQueryParameter($link);
 
 		if ($value instanceof DecodedUnsubscribeValue) {
 			$this->unsubscribe([$value->email], $value->section ?? self::SectionGlobal);
@@ -66,9 +81,9 @@ final class DefaultEmailManager implements EmailManager
 		}
 	}
 
-	public function resubscribe(string $email, string $section): void
+	public function resubscribe(string $email, string $section, string $category = EmailManager::GlobalCategory): void
 	{
-		$this->subscriberModel->resubscribe($email, section: $section);
+		$this->subscriptionModel->resubscribe($email, $section, $category);
 	}
 
 	public function softBounce(string $email): void
@@ -76,7 +91,9 @@ final class DefaultEmailManager implements EmailManager
 		$unsubscribed = $this->softBounceModel->incrementBounce($email);
 
 		if ($unsubscribed) {
-			$this->reset($unsubscribed);
+			$this->suspensionModel->suspend($unsubscribed, SuspensionType::SoftBounce);
+
+			$this->resetSoftBouncesAndInactivity($unsubscribed);
 		}
 	}
 
@@ -85,9 +102,9 @@ final class DefaultEmailManager implements EmailManager
 	 */
 	public function spamComplaint(array|string $emails): void
 	{
-		$this->subscriberModel->unsubscribe($emails, self::SuspensionTypeSpamComplaint);
+		$this->suspensionModel->suspend($emails, SuspensionType::SpamComplaint);
 
-		$this->reset($emails);
+		$this->resetSoftBouncesAndInactivity($emails);
 	}
 
 	/**
@@ -106,42 +123,61 @@ final class DefaultEmailManager implements EmailManager
 		$unsubscribed = $this->inactivityModel->incrementCounter($emails, $section);
 
 		if ($unsubscribed) {
-			$this->reset($unsubscribed);
+			$this->subscriptionModel->unsubscribe($unsubscribed, UnsubscribeType::Inactivity, $section);
+
+			$this->resetSoftBouncesAndInactivity($unsubscribed);
 		}
 	}
 
-	/**
-	 * @return string[]
-	 */
-	public function getSuspensionReasons(string $email, string $section): array
+	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool
 	{
-		return $this->subscriberModel->getReasons($email, $section);
+		return !$this->suspensionModel->isSuspended($email) && $this->subscriptionModel->isSubscribed($email, $section, $category);
 	}
 
-	public function isSuspended(string $email, string $section): bool
+	/**
+	 * @param string[] $emails
+	 * @return string[]
+	 */
+	public function filterEmailsForDelivery(array $emails, string $section, string $category = EmailManager::GlobalCategory): array
 	{
-		return $this->subscriberModel->isSuspended($email, $section);
+		return $this->_filterEmails($emails, $section, $category);
 	}
 
 	/**
 	 * @param EmailAccount[] $accounts
 	 * @return EmailAccount[]
 	 */
-	public function clearFromSuspendedAccounts(array $accounts, string $section): array
+	public function filterEmailAccountsForDelivery(array $accounts, string $section, string $category = EmailManager::GlobalCategory): array
 	{
-		$index = [];
+		return $this->_filterEmails($accounts, $section, $category, static fn (EmailAccount $account): string => $account->email);
+	}
+
+	/**
+	 * @template TValue
+	 * @template TKey of array-key
+	 * @param array<TKey, TValue> $values
+	 * @param callable(TValue): string $getEmail
+	 * @return TValue[]
+	 */
+	private function _filterEmails(array $values, string $section, string $category, ?callable $getEmail = null): array
+	{
 		$emails = [];
 
-		foreach ($accounts as $account) {
-			$index[$account->email] = $account;
-			$emails[] = $account->email;
+		if ($getEmail) {
+			foreach ($values as $key => $value) {
+				$emails[$key] = $getEmail($value);
+			}
+		} else {
+			$emails = $values;
 		}
 
-		$validEmails = $this->subscriberModel->clearFromSuspended($emails, $section);
+		$emails = $this->suspensionModel->filterEmailsForDelivery($emails);
+		$emails = $this->subscriptionModel->filterEmailsForDelivery($emails, $section, $category);
+
 		$return = [];
 
-		foreach ($validEmails as $email) {
-			$return[] = $index[$email];
+		foreach ($emails as $key => $_) {
+			$return[] = $values[$key];
 		}
 
 		return $return;
@@ -150,20 +186,30 @@ final class DefaultEmailManager implements EmailManager
 	/**
 	 * @param string[]|string $emails
 	 */
-	private function reset(array|string $emails): void
+	public function reset(array|string $emails): void
 	{
-		$this->softBounceModel->resetBounce($emails);
-		$this->inactivityModel->resetAllCounterSections($emails);
+		$this->resetSoftBouncesAndInactivity($emails);
+
+		$this->subscriptionModel->reset($emails);
+		$this->suspensionModel->reset($emails);
+	}
+
+	private function getSubscribeManager(): SubscribeManager
+	{
+		if (!$this->subscribeManager) {
+			throw new LogicException('SubscribeManager is not set.');
+		}
+
+		return $this->subscribeManager;
 	}
 
 	/**
 	 * @param string[]|string $emails
 	 */
-	public function clearRecords(array|string $emails): void
+	private function resetSoftBouncesAndInactivity(array|string $emails): void
 	{
-		$this->reset($emails);
-
-		$this->subscriberModel->clear($emails);
+		$this->softBounceModel->resetBounce($emails);
+		$this->inactivityModel->resetAllCounterSections($emails);
 	}
 
 }

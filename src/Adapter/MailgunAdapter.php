@@ -9,7 +9,7 @@ use SensitiveParameter;
 use WebChemistry\Emails\HtmlMessage;
 use WebChemistry\Emails\Message;
 
-final readonly class MailgunMailer extends AbstractMailer
+final readonly class MailgunAdapter extends AbstractAdapter
 {
 
 	private Mailgun $client;

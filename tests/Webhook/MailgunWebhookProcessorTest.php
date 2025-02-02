@@ -6,7 +6,7 @@ use Tests\DatabaseEnvironment;
 use Tests\TestCase;
 use Tests\WebhookEnvironment;
 use WebChemistry\Emails\Adapter\Webhook\MailgunWebhookProcessor;
-use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Type\SuspensionType;
 
 final class MailgunWebhookProcessorTest extends TestCase
 {
@@ -27,7 +27,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createInvalidRequest(method: true);
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::MethodNotAllowed, $code);
 	}
@@ -36,7 +36,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createInvalidRequest(emptyBody: true);
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::BadRequest, $code);
 	}
@@ -45,7 +45,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createInvalidRequest(invalidJson: true);
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::BadRequest, $code);
 	}
@@ -54,7 +54,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createRequest(__DIR__ . '/mailgun/signature_mismatch.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::InvalidSignature, $code);
 	}
@@ -63,45 +63,45 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createRequest(__DIR__ . '/mailgun/spam_complaint.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertSame([EmailManager::SuspensionTypeSpamComplaint], $this->manager->getSuspensionReasons($this->email, EmailManager::SectionTransactional));
+		$this->assertSame([SuspensionType::SpamComplaint], $this->suspensionModel->getReasons($this->email));
 	}
 
 	public function testOpen(): void
 	{
-		$this->inactivityModel->incrementCounter($this->email, EmailManager::SectionTransactional);
+		$this->inactivityModel->incrementCounter($this->email, 'notifications');
 
-		$this->assertSame(1, $this->inactivityModel->getCount($this->email, EmailManager::SectionTransactional));
+		$this->assertSame(1, $this->inactivityModel->getCount($this->email, 'notifications'));
 
 		$request = $this->createRequest(__DIR__ . '/mailgun/open.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertSame(0, $this->inactivityModel->getCount($this->email, EmailManager::SectionTransactional));
+		$this->assertSame(0, $this->inactivityModel->getCount($this->email, 'notifications'));
 	}
 
 	public function testHardBounce(): void
 	{
 		$request = $this->createRequest(__DIR__ . '/mailgun/permanent_failure.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertTrue($this->manager->isSuspended($this->email, EmailManager::SectionTransactional));
-		$this->assertSame([EmailManager::SuspensionTypeHardBounce], $this->manager->getSuspensionReasons($this->email, EmailManager::SectionTransactional));
+		$this->assertFalse($this->manager->canSend($this->email, 'notifications'));
+		$this->assertSame([SuspensionType::HardBounce], $this->suspensionModel->getReasons($this->email));
 	}
 
 	public function testSoftBounce(): void
 	{
 		$request = $this->createRequest(__DIR__ . '/mailgun/soft_bounce.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertFalse($this->manager->isSuspended($this->email, EmailManager::SectionTransactional));
+		$this->assertTrue($this->manager->canSend($this->email, 'notifications'));
 
 		$this->assertSame(1, $this->softBounceModel->getBounceCount($this->email));
 	}
@@ -110,11 +110,11 @@ final class MailgunWebhookProcessorTest extends TestCase
 	{
 		$request = $this->createRequest(__DIR__ . '/mailgun/unsubscribe.http');
 
-		$code = $this->webhook->process($this->manager, $request, EmailManager::SectionTransactional);
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertTrue($this->manager->isSuspended($this->email, EmailManager::SectionTransactional));
-		$this->assertSame([EmailManager::SuspensionTypeUnsubscribe], $this->manager->getSuspensionReasons($this->email, EmailManager::SectionTransactional));
+		$this->assertFalse($this->manager->canSend($this->email, 'notifications'));
+		$this->assertFalse($this->subscriptionModel->isSubscribed($this->email, 'notifications'));
 	}
 
 }

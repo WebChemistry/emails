@@ -4,7 +4,6 @@ namespace WebChemistry\Emails\Entity;
 
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
-use WebChemistry\Emails\EmailManager;
 
 trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 {
@@ -22,7 +21,7 @@ trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 	#[Column(type: 'integer', options: ['default' => '0'])]
 	private int $counter = 0;
 
-	public function __construct(string $email, string $section = EmailManager::SectionGlobal)
+	public function __construct(string $email, string $section)
 	{
 		$this->email = $email;
 		$this->section = $section;

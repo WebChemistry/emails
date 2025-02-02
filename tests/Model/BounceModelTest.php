@@ -5,7 +5,6 @@ namespace Tests\Model;
 use Tests\DatabaseEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\Model\SoftBounceModel;
-use WebChemistry\Emails\Model\SubscriberModel;
 
 final class BounceModelTest extends TestCase
 {
@@ -14,12 +13,9 @@ final class BounceModelTest extends TestCase
 
 	private SoftBounceModel $model;
 
-	private SubscriberModel $subscriberModel;
-
 	protected function setUp(): void
 	{
-		$this->subscriberModel = new SubscriberModel($this->registry);
-		$this->model = new SoftBounceModel($this->registry, $this->subscriberModel);
+		$this->model = new SoftBounceModel($this->registry);
 	}
 
 	public function testZeroBounce(): void
@@ -29,30 +25,29 @@ final class BounceModelTest extends TestCase
 
 	public function testFirstBounce(): void
 	{
-		$this->model->incrementBounce($this->firstEmail);
+		$suspended = $this->model->incrementBounce($this->firstEmail);
 
 		$this->assertSame(1, $this->model->getBounceCount($this->firstEmail));
-		$this->assertFalse($this->subscriberModel->isSuspended($this->firstEmail));
+		$this->assertSame([], $suspended);
 	}
 
 	public function testSecondBounce(): void
 	{
 		$this->model->incrementBounce($this->firstEmail);
-		$this->model->incrementBounce($this->firstEmail);
+		$suspended = $this->model->incrementBounce($this->firstEmail);
 
 		$this->assertSame(2, $this->model->getBounceCount($this->firstEmail));
-		$this->assertFalse($this->subscriberModel->isSuspended($this->firstEmail));
+		$this->assertSame([], $suspended);
 	}
 
 	public function testFinalBounce(): void
 	{
 		$this->model->incrementBounce($this->firstEmail);
 		$this->model->incrementBounce($this->firstEmail);
-		$this->model->incrementBounce($this->firstEmail);
+		$suspended = $this->model->incrementBounce($this->firstEmail);
 
-		$this->assertTrue($this->subscriberModel->isSuspended($this->firstEmail));
+		$this->assertSame([$this->firstEmail], $suspended);
 		$this->assertSame(0, $this->model->getBounceCount($this->firstEmail));
-		$this->assertSame(['soft_bounce'], $this->subscriberModel->getReasons($this->firstEmail));
 	}
 
 }
