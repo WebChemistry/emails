@@ -3,13 +3,15 @@
 namespace Tests\Plugin;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\MockClock;
+use Tests\ConnectionInitializer;
 use Tests\EmailManagerEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\Plugin\LastSent\LastSentPlugin;
 use WebChemistry\Emails\StringEmailRegistry;
 
-final class LastSentPluginTest extends TestCase
+final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 {
 
 	use EmailManagerEnvironment;
@@ -18,12 +20,16 @@ final class LastSentPluginTest extends TestCase
 
 	private LastSentPlugin $plugin;
 
+	public static function initializeConnection(Connection $connection): void
+	{
+		$connection->executeStatement('DROP TABLE IF EXISTS email_last_sent');
+		$connection->executeStatement('CREATE TABLE email_last_sent (email VARCHAR(255) PRIMARY KEY, sent_at DATETIME)');
+	}
+
 	protected function setUp(): void
 	{
 		$this->clock = new MockClock(new DateTimeImmutable('2021-01-01 12:00:00'));
 		$this->plugin = new LastSentPlugin($this->connectionAccessor,'8 hours', $this->clock);
-
-		$this->connection->executeStatement('CREATE TABLE IF NOT EXISTS email_last_sent (email VARCHAR(255) PRIMARY KEY, sent_at DATETIME)');
 
 		$this->dispatcher->addSubscriber($this->plugin);
 	}

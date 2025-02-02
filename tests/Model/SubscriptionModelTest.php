@@ -5,7 +5,6 @@ namespace Tests\Model;
 use Tests\DatabaseEnvironment;
 use Tests\SectionEnvironment;
 use Tests\TestCase;
-use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\UnsubscribeType;
@@ -149,7 +148,7 @@ final class SubscriptionModelTest extends TestCase
 				'type' => UnsubscribeType::Inactivity->value,
 				'category' => SectionCategory::Global,
 			],
-		], $this->databaseSnapshot());
+		], $this->databaseSnapshot('type', 'DESC'));
 	}
 
 	public function testUpgrade(): void
@@ -261,13 +260,19 @@ final class SubscriptionModelTest extends TestCase
 	/**
 	 * @return array{ email: string, section: string, type: string, category: string }[]
 	 */
-	private function databaseSnapshot(): array
+	private function databaseSnapshot(?string $sort = null, string $order = 'ASC'): array
 	{
-		return $this->connection->createQueryBuilder()
+		$qb = $this->connection->createQueryBuilder()
 			->select('email, section, type, category')
-			->from('email_subscriptions')
-			->orderBy('created_at', 'ASC')
-			->executeQuery()->fetchAllAssociative();
+			->from('email_subscriptions');
+
+		if ($sort) {
+			$qb->orderBy($sort, $order);
+		} else {
+			$qb->orderBy('created_at', 'ASC');
+		}
+
+		return $qb->executeQuery()->fetchAllAssociative();
 	}
 
 }
