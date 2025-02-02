@@ -4,7 +4,7 @@ namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ConnectionRegistry;
-use WebChemistry\Emails\Section\Sections;
+use WebChemistry\Emails\Section\Section;
 
 final readonly class InactivityModel
 {
@@ -15,7 +15,6 @@ final readonly class InactivityModel
 	public function __construct(
 		private int $maxInactivity,
 		private ConnectionRegistry $registry,
-		private Sections $sections,
 	)
 	{
 	}
@@ -24,10 +23,8 @@ final readonly class InactivityModel
 	 * @param string|string[] $emails
 	 * @return string[]
 	 */
-	public function incrementCounter(string|array $emails, string $section): array
+	public function incrementCounter(string|array $emails, Section $section): array
 	{
-		$this->sections->validateSection($section);
-
 		$emails = is_string($emails) ? [$emails] : $emails;
 
 		if (!$emails) {
@@ -36,23 +33,21 @@ final readonly class InactivityModel
 
 		$this->insert(
 			'email_inactivity_counters',
-			array_map(fn (string $email) => ['email' => $email, 'section' => $section, 'counter' => 1], $emails),
+			array_map(fn (string $email) => ['email' => $email, 'section' => $section->name, 'counter' => 1], $emails),
 			['email', 'section'],
 			fn () => 'counter = counter + 1',
 		);
 
-		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section), $section);
+		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section->name), $section);
 
 		return $inactiveEmails;
 	}
 
-	public function getCount(string $email, string $section): int
+	public function getCount(string $email, Section $section): int
 	{
-		$this->sections->validateSection($section);
-
 		return (int) $this->getConnection()->fetchOne(
 			'SELECT counter FROM email_inactivity_counters WHERE email = ? AND section = ?',
-			[$email, $section],
+			[$email, $section->name],
 		);
 	}
 
@@ -77,10 +72,8 @@ final readonly class InactivityModel
 	/**
 	 * @param string|string[] $emails
 	 */
-	public function resetCounter(string|array $emails, string $section): void
+	public function resetCounter(string|array $emails, Section $section): void
 	{
-		$this->sections->validateSection($section);
-
 		$emails = is_string($emails) ? [$emails] : $emails;
 
 		if (!$emails) {
@@ -92,7 +85,7 @@ final readonly class InactivityModel
 			->where('email IN(?)')
 			->andWhere('section = ?')
 			->setParameter(0, $emails, ArrayParameterType::STRING)
-			->setParameter(1, $section)
+			->setParameter(1, $section->name)
 			->executeStatement();
 	}
 

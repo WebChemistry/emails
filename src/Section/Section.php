@@ -3,45 +3,36 @@
 namespace WebChemistry\Emails\Section;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\EmailManager;
 
-final readonly class SectionConfig
+final readonly class Section
 {
 
 	public const MaxLength = 30;
 
-	/** @var string[] */
+	/** @var array<string, SectionCategory> */
 	private array $categories;
 
 	/**
-	 * @param string[] $categories
+	 * @param iterable<string> $categoryNames
 	 */
 	public function __construct(
 		public string $name,
-		array $categories = [],
+		iterable $categoryNames = [],
 		private bool $unsubscribable = true,
 	)
 	{
-		if (str_contains($name, '.')) {
-			throw new InvalidArgumentException('Section name cannot contain dot.');
-		}
+		$categories = [];
 
-		if (strlen($name) > self::MaxLength) {
-			throw new InvalidArgumentException(sprintf('Section name cannot be longer than %d characters.', self::MaxLength));
-		}
-
-		foreach ($categories as $category) {
-			if (str_contains($category, '.')) {
-				throw new InvalidArgumentException('Category name cannot contain dot.');
+		foreach ($categoryNames as $category) {
+			if (isset($categories[$category])) {
+				throw new InvalidArgumentException(sprintf('Category %s is duplicated.', $category));
 			}
 
-			if (strlen($category) > self::MaxLength) {
-				throw new InvalidArgumentException(sprintf('Category name cannot be longer than %d characters.', self::MaxLength));
+			if ($category === SectionCategory::Global) {
+				throw new InvalidArgumentException(sprintf('Category %s is reserved.', SectionCategory::Global));
 			}
-		}
 
-		if (in_array(EmailManager::GlobalCategory, $categories, true)) {
-			throw new InvalidArgumentException(sprintf('Global category "%s" is reserved.', EmailManager::GlobalCategory));
+			$categories[$category] = new SectionCategory($this, $category);
 		}
 
 		$this->categories = $categories;
@@ -49,24 +40,29 @@ final readonly class SectionConfig
 
 	public function hasCategory(string $name): bool
 	{
-		if ($name === EmailManager::GlobalCategory) {
-			return true;
-		}
-
-		return in_array($name, $this->categories, true);
+		return $name === SectionCategory::Global || isset($this->categories[$name]);
 	}
 
 	public function hasCategories(): bool
 	{
-		return count($this->categories) > 1;
+		return (bool) $this->categories;
 	}
 
 	/**
-	 * @return string[]
+	 * @return array<string, SectionCategory>
 	 */
 	public function getCategories(): array
 	{
 		return $this->categories;
+	}
+
+	public function getCategory(string $name): SectionCategory
+	{
+		if ($name === SectionCategory::Global) {
+			return new SectionCategory($this, SectionCategory::Global);
+		}
+
+		return $this->categories[$name] ?? throw new InvalidArgumentException(sprintf('Category %s does not exist in section %s.', $name, $this->name));
 	}
 
 	public function isUnsubscribable(): bool
@@ -89,8 +85,10 @@ final readonly class SectionConfig
 			return;
 		}
 
-		$missing = array_diff($this->categories, $categories);
-		$extra = array_diff($categories, $this->categories);
+		$categoryNames = array_keys($this->categories);
+
+		$missing = array_diff($categoryNames, $categories);
+		$extra = array_diff($categories, $categoryNames);
 
 		if ($missing && $extra) {
 			throw new InvalidArgumentException(sprintf('Categories %s are missing and %s are extra in section %s.', implode(', ', $missing), implode(', ', $extra), $this->name));
@@ -101,6 +99,11 @@ final readonly class SectionConfig
 		}
 
 		throw new InvalidArgumentException(sprintf('Categories %s are extra in section %s.', implode(', ', $extra), $this->name));
+	}
+
+	public function getGlobalCategory(): SectionCategory
+	{
+		return $this->getCategory(SectionCategory::Global);
 	}
 
 }

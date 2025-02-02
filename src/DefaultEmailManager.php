@@ -7,6 +7,7 @@ use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Subscribe\DecodedResubscribeValue;
 use WebChemistry\Emails\Subscribe\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Subscribe\SubscribeManager;
@@ -16,19 +17,8 @@ use WebChemistry\Emails\Type\UnsubscribeType;
 final readonly class DefaultEmailManager implements EmailManager
 {
 
-	public const SectionGlobal = 'global';
-	public const SectionTransactional = 'transactional';
-	public const SectionMarketing = 'marketing';
-
-	public const SuspensionTypeHardBounce = 'hard_bounce';
-	public const SuspensionTypeSoftBounce = 'soft_bounce';
-	public const SuspensionTypeSpamComplaint = 'spam_complaint';
-	public const SuspensionTypeUnsubscribe = 'unsubscribe';
-	public const SuspensionTypeInactivity = 'inactivity';
-	public const SuspensionTypes = ['hard_bounce', 'soft_bounce', 'spam_complaint', 'unsubscribe', 'inactivity'];
-	public const SuspensionResubscribeTypes = ['unsubscribe', 'inactivity'];
-
 	public function __construct(
+		private Sections $sections,
 		private InactivityModel $inactivityModel,
 		private SoftBounceModel $softBounceModel,
 		private SubscriptionModel $subscriptionModel,
@@ -55,19 +45,25 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;
 
+		$category = $this->sections->getCategory($section, $category);
+
 		foreach ($emails as $email) {
-			$this->subscriptionModel->unsubscribe($email, UnsubscribeType::User, $section, $category);
+			$this->subscriptionModel->unsubscribe($email, UnsubscribeType::User, $category);
 		}
 	}
 
 	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
 	{
-		return $this->getSubscribeManager()->addResubscribeQueryParameter($link, $email, $section, $category);
+		$category = $this->sections->getCategory($section, $category);
+
+		return $this->getSubscribeManager()->addResubscribeQueryParameter($link, $email, $category);
 	}
 
 	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = EmailManager::GlobalCategory): string
 	{
-		return $this->getSubscribeManager()->addUnsubscribeQueryParameter($link, $email, $section, $category);
+		$category = $this->sections->getCategory($section, $category);
+
+		return $this->getSubscribeManager()->addUnsubscribeQueryParameter($link, $email, $category);
 	}
 
 	public function processSubscribeUnsubscribeQueryParameter(string $link): void
@@ -75,15 +71,17 @@ final readonly class DefaultEmailManager implements EmailManager
 		$value = $this->getSubscribeManager()->loadQueryParameter($link);
 
 		if ($value instanceof DecodedUnsubscribeValue) {
-			$this->unsubscribe([$value->email], $value->section ?? self::SectionGlobal);
+			$this->unsubscribe([$value->email], $value->section, $value->category);
 		} else if ($value instanceof DecodedResubscribeValue) {
-			$this->resubscribe($value->email, $value->section ?? self::SectionGlobal);
+			$this->resubscribe($value->email, $value->section, $value->category);
 		}
 	}
 
 	public function resubscribe(string $email, string $section, string $category = EmailManager::GlobalCategory): void
 	{
-		$this->subscriptionModel->resubscribe($email, $section, $category);
+		$category = $this->sections->getCategory($section, $category);
+
+		$this->subscriptionModel->resubscribe($email, $category);
 	}
 
 	public function softBounce(string $email): void
@@ -112,7 +110,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	public function recordOpenActivity(array|string $emails, string $section): void
 	{
-		$this->inactivityModel->resetCounter($emails, $section);
+		$this->inactivityModel->resetCounter($emails, $this->sections->getSection($section));
 	}
 
 	/**
@@ -120,10 +118,12 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	public function recordSentActivity(array|string $emails, string $section): void
 	{
+		$section = $this->sections->getSection($section);
+
 		$unsubscribed = $this->inactivityModel->incrementCounter($emails, $section);
 
 		if ($unsubscribed) {
-			$this->subscriptionModel->unsubscribe($unsubscribed, UnsubscribeType::Inactivity, $section);
+			$this->subscriptionModel->unsubscribe($unsubscribed, UnsubscribeType::Inactivity, $section->getGlobalCategory());
 
 			$this->resetSoftBouncesAndInactivity($unsubscribed);
 		}
@@ -131,7 +131,9 @@ final readonly class DefaultEmailManager implements EmailManager
 
 	public function canSend(string $email, string $section, string $category = EmailManager::GlobalCategory): bool
 	{
-		return !$this->suspensionModel->isSuspended($email) && $this->subscriptionModel->isSubscribed($email, $section, $category);
+		$category = $this->sections->getCategory($section, $category);
+
+		return !$this->suspensionModel->isSuspended($email) && $this->subscriptionModel->isSubscribed($email, $category);
 	}
 
 	/**
@@ -161,6 +163,8 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	private function _filterEmails(array $values, string $section, string $category, ?callable $getEmail = null): array
 	{
+		$category = $this->sections->getCategory($section, $category);
+
 		$emails = [];
 
 		if ($getEmail) {
@@ -172,7 +176,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		}
 
 		$emails = $this->suspensionModel->filterEmailsForDelivery($emails);
-		$emails = $this->subscriptionModel->filterEmailsForDelivery($emails, $section, $category);
+		$emails = $this->subscriptionModel->filterEmailsForDelivery($emails, $category);
 
 		$return = [];
 

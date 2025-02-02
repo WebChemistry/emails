@@ -71,16 +71,16 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 	public function testOpen(): void
 	{
-		$this->inactivityModel->incrementCounter($this->email, 'notifications');
+		$this->inactivityModel->incrementCounter($this->email, $this->sections->getSection('notifications'));
 
-		$this->assertSame(1, $this->inactivityModel->getCount($this->email, 'notifications'));
+		$this->assertSame(1, $this->inactivityModel->getCount($this->email, $this->sections->getSection('notifications')));
 
 		$request = $this->createRequest(__DIR__ . '/mailgun/open.http');
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame($this->webhook::Success, $code);
-		$this->assertSame(0, $this->inactivityModel->getCount($this->email, 'notifications'));
+		$this->assertSame(0, $this->inactivityModel->getCount($this->email, $this->sections->getSection('notifications')));
 	}
 
 	public function testHardBounce(): void
@@ -114,7 +114,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$this->assertSame($this->webhook::Success, $code);
 		$this->assertFalse($this->manager->canSend($this->email, 'notifications'));
-		$this->assertFalse($this->subscriptionModel->isSubscribed($this->email, 'notifications'));
+		$this->assertFalse($this->subscriptionModel->isSubscribed($this->email, $this->sections->getCategory('notifications')));
 	}
 
 }

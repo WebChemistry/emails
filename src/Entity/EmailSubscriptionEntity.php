@@ -5,7 +5,7 @@ namespace WebChemistry\Emails\Entity;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
-use WebChemistry\Emails\Section\SectionConfig;
+use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Type\SuspensionType;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
@@ -19,11 +19,11 @@ trait EmailSubscriptionEntity // @phpstan-ignore trait.unused
 	private string $email;
 
 	#[Id]
-	#[Column(type: 'string', length: SectionConfig::MaxLength)]
+	#[Column(type: 'string', length: Section::MaxLength)]
 	private string $section;
 
 	#[Id]
-	#[Column(type: 'string', length: SectionConfig::MaxLength)]
+	#[Column(type: 'string', length: Section::MaxLength)]
 	private string $category;
 
 	#[Id]

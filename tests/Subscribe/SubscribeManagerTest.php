@@ -3,6 +3,7 @@
 namespace Tests\Subscribe;
 
 use InvalidArgumentException;
+use Tests\SectionEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Common\EncodeType;
@@ -13,6 +14,8 @@ use WebChemistry\Emails\Subscribe\SubscribeManager;
 final class SubscribeManagerTest extends TestCase
 {
 
+	use SectionEnvironment;
+	
 	private SubscribeManager $manager;
 
 	protected function setUp(): void
@@ -28,22 +31,22 @@ final class SubscribeManagerTest extends TestCase
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, 'notifications'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 
 		$expected = 'http://example.com/unsubscribe?id=12&' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, 'notifications'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, 'notifications'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 	}
 
@@ -54,22 +57,22 @@ final class SubscribeManagerTest extends TestCase
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications'),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, 'notifications'),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 
 		$expected = 'http://example.com/unsubscribe?id=12&' . $hash;
 
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, 'notifications'),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 		$this->assertSame(
 			$expected,
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, 'notifications'),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe?id=12&', $this->firstEmail, $this->sections->getCategory('notifications')),
 		);
 	}
 
@@ -77,7 +80,7 @@ final class SubscribeManagerTest extends TestCase
 	{
 		$this->assertSame(
 			$expected = 'http://example.com/unsubscribe?u=v1.b.ab50c6a053366d0431424f4149408565be4d6cac7f381a3cdfde3173eef761dbdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ',
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, $this->sections->getCategory('notifications', 'article')),
 		);
 
 		$this->assertEquals(new DecodedUnsubscribeValue(
@@ -91,7 +94,7 @@ final class SubscribeManagerTest extends TestCase
 	{
 		$this->assertSame(
 			$expected = 'http://example.com/unsubscribe?r=v1.b.ab50c6a053366d0431424f4149408565be4d6cac7f381a3cdfde3173eef761dbdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ',
-			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article'),
+			$this->manager->addResubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, $this->sections->getCategory('notifications', 'article')),
 		);
 
 		$this->assertEquals(new DecodedResubscribeValue(
@@ -105,7 +108,7 @@ final class SubscribeManagerTest extends TestCase
 	{
 		$this->assertSame(
 			$expected = 'http://example.com/unsubscribe?u=v1.b.1ea0f86ce537f05aa4a251f12ef3b2d81e65ce442623e720b124555276a584afdGVzdEBleGFtcGxlLmNvbQ.bm90aWZpY2F0aW9ucw.YXJ0aWNsZQ..Zm9v',
-			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, 'notifications', 'article', null, 'foo'),
+			$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe', $this->firstEmail, $this->sections->getCategory('notifications', 'article'), null, 'foo'),
 		);
 
 		$this->assertEquals(new DecodedUnsubscribeValue(
@@ -120,14 +123,14 @@ final class SubscribeManagerTest extends TestCase
 	{
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?u=foo', $this->firstEmail, 'notifications');
+		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?u=foo', $this->firstEmail, $this->sections->getCategory('notifications'));
 	}
 
 	public function testParameterAlreadyExists2(): void
 	{
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=42&u=foo', $this->firstEmail, 'notifications');
+		$this->manager->addUnsubscribeQueryParameter('http://example.com/unsubscribe?id=42&u=foo', $this->firstEmail, $this->sections->getCategory('notifications'));
 	}
 
 	public function testGetting(): void

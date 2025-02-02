@@ -3,64 +3,56 @@
 namespace Tests\Model;
 
 use Tests\DatabaseEnvironment;
+use Tests\SectionEnvironment;
 use Tests\TestCase;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Model\SubscriptionModel;
-use WebChemistry\Emails\Section\SectionConfig;
-use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
 final class SubscriptionModelTest extends TestCase
 {
 
 	use DatabaseEnvironment;
+	use SectionEnvironment;
 
 	private SubscriptionModel $model;
 
 	protected function setUp(): void
 	{
-		$sections = new Sections();
-		$sections->addSection(new SectionConfig('notifications', [
-			'article',
-			'comment',
-			'mention',
-		]));
-		$sections->addSection(new SectionConfig('section', ['category']));
-
-		$this->model = new SubscriptionModel($this->registry, $sections);
+		$this->model = new SubscriptionModel($this->registry);
 	}
 
 	public function testInitialState(): void
 	{
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, EmailManager::SectionEssential));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getEssentialCategory()));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
 		$this->assertSame([
 			'article' => true,
 			'comment' => true,
 			'mention' => true,
-		], $this->model->getInfo($this->firstEmail)->getCategoriesAsMapOfBooleans('notifications'));
+		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
 	}
 
 	public function testUnsubscribeEssential(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, EmailManager::SectionEssential);
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getEssentialCategory());
 
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, EmailManager::SectionEssential));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getEssentialCategory()));
 	}
 
 	public function testUnsubscribeNotification(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
 
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'comment'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, EmailManager::SectionEssential));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'comment')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getEssentialCategory()));
 
 		$this->assertSame([
 			'article' => false,
 			'comment' => true,
 			'mention' => true,
-		], $this->model->getInfo($this->firstEmail)->getCategoriesAsMapOfBooleans('notifications'));
+		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
 
 		$this->assertSame([
 			[
@@ -74,16 +66,16 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUnsubscribeGlobal(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications'));
 
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'comment'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'mention'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications'));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'comment')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'mention')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications')));
 
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'section'));
-		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail)->getReason('notifications'));
-		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail)->getReason('notifications', 'article'));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('section')));
+		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason());
+		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason('article'));
 
 		$this->assertSame([
 			[
@@ -97,20 +89,20 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testResubscribeGlobal(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'comment');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'comment'));
 
-		$this->model->resubscribe($this->firstEmail, 'notifications');
+		$this->model->resubscribe($this->firstEmail, $this->sections->getCategory('notifications'));
 
 		$this->assertSame([], $this->databaseSnapshot());
 	}
 
 	public function testResubscribeOneCategory(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'comment');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'comment'));
 
-		$this->model->resubscribe($this->firstEmail, 'notifications', 'comment');
+		$this->model->resubscribe($this->firstEmail, $this->sections->getCategory('notifications', 'comment'));
 
 		$this->assertSame([
 			[
@@ -124,8 +116,8 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUnsubscribeOneThenUnsubscribeGlobal(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications'));
 
 		$this->assertSame([
 			[
@@ -139,8 +131,8 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUnsubscribeOneThenUnsubscribeGlobalWithInactivityType(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, 'notifications');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, $this->sections->getCategory('notifications'));
 
 		$this->assertSame([
 			[
@@ -160,44 +152,44 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUpgrade(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, 'notifications', 'article');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, $this->sections->getCategory('notifications', 'article'));
 
-		$this->assertSame(UnsubscribeType::Inactivity, $this->model->getInfo($this->firstEmail)->getReason('notifications', 'article'));
+		$this->assertSame(UnsubscribeType::Inactivity, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason('article'));
 
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
 
-		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail)->getReason('notifications', 'article'));
+		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason('article'));
 	}
 
 	public function testDowngrade(): void
 	{
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, 'notifications', 'article');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::User, $this->sections->getCategory('notifications', 'article'));
 
-		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail)->getReason('notifications', 'article'));
+		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason('article'));
 
-		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, 'notifications', 'article');
+		$this->model->unsubscribe($this->firstEmail, UnsubscribeType::Inactivity, $this->sections->getCategory('notifications', 'article'));
 
-		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail)->getReason('notifications', 'article'));
+		$this->assertSame(UnsubscribeType::User, $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason('article'));
 	}
 
 	public function testUpdateSomeByArrayOfBooleans(): void
 	{
-		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, 'notifications', [
+		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, $this->sections->getSection('notifications'), [
 			'article' => false,
 			'comment' => true,
 			'mention' => false,
 		]);
 
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'comment'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'mention'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications'));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'comment')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'mention')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications')));
 
 		$this->assertSame([
 			'article' => false,
 			'comment' => true,
 			'mention' => false,
-		], $this->model->getInfo($this->firstEmail)->getCategoriesAsMapOfBooleans('notifications'));
+		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
 
 		$this->assertSame([
 			[
@@ -217,22 +209,22 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUpdateAllByArrayOfBooleans(): void
 	{
-		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, 'notifications', [
+		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, $this->sections->getSection('notifications'), [
 			'article' => false,
 			'comment' => false,
 			'mention' => false,
 		]);
 
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'comment'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications', 'mention'));
-		$this->assertFalse($this->model->isSubscribed($this->firstEmail, 'notifications'));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'comment')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'mention')));
+		$this->assertFalse($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications')));
 
 		$this->assertSame([
 			'article' => false,
 			'comment' => false,
 			'mention' => false,
-		], $this->model->getInfo($this->firstEmail)->getCategoriesAsMapOfBooleans('notifications'));
+		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
 
 		$this->assertSame([
 			[
@@ -246,22 +238,22 @@ final class SubscriptionModelTest extends TestCase
 
 	public function testUpdateNoneByArrayOfBooleans(): void
 	{
-		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, 'notifications', [
+		$this->model->updateSectionByArrayOfBooleans($this->firstEmail, $this->sections->getSection('notifications'), [
 			'article' => true,
 			'comment' => true,
 			'mention' => true,
 		]);
 
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'article'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'comment'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications', 'mention'));
-		$this->assertTrue($this->model->isSubscribed($this->firstEmail, 'notifications'));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'article')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'comment')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications', 'mention')));
+		$this->assertTrue($this->model->isSubscribed($this->firstEmail, $this->sections->getCategory('notifications')));
 
 		$this->assertSame([
 			'article' => true,
 			'comment' => true,
 			'mention' => true,
-		], $this->model->getInfo($this->firstEmail)->getCategoriesAsMapOfBooleans('notifications'));
+		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
 	}
 
 	/**

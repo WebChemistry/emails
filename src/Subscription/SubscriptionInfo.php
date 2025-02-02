@@ -5,7 +5,8 @@ namespace WebChemistry\Emails\Subscription;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use WebChemistry\Emails\EmailManager;
-use WebChemistry\Emails\Section\Sections;
+use WebChemistry\Emails\Section\Section;
+use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
 final class SubscriptionInfo
@@ -16,7 +17,7 @@ final class SubscriptionInfo
 	 */
 	private function __construct(
 		private array $index,
-		private Sections $sections,
+		private Section $section,
 	)
 	{
 	}
@@ -24,34 +25,30 @@ final class SubscriptionInfo
 	/**
 	 * @return array<string, bool>
 	 */
-	public function getCategoriesAsMapOfBooleans(string $section): array
+	public function getCategoriesAsMapOfBooleans(): array
 	{
-		$config = $this->sections->getConfig($section);
-
-		if (!$config->hasCategories()) {
-			throw new InvalidArgumentException(sprintf('Section %s does not have categories.', $section));
+		if (!$this->section->hasCategories()) {
+			throw new InvalidArgumentException(sprintf('Section %s does not have categories.', $this->section->name));
 		}
 
 		$categories = [];
 
-		if (isset($this->index[$section][EmailManager::GlobalCategory])) {
-			foreach ($config->getCategories() as $category) {
-				$categories[$category] = false;
+		if (isset($this->index[$this->section->name][EmailManager::GlobalCategory])) {
+			foreach ($this->section->getCategories() as $category) {
+				$categories[$category->name] = false;
 			}
 		} else {
-			foreach ($config->getCategories() as $category) {
-				$categories[$category] = !isset($this->index[$section][$category]);
+			foreach ($this->section->getCategories() as $category) {
+				$categories[$category->name] = !isset($this->index[$this->section->name][$category->name]);
 			}
 		}
 
 		return $categories;
 	}
 
-	public function getReason(string $section, string $category = EmailManager::GlobalCategory): ?UnsubscribeType
+	public function getReason(string $category = SectionCategory::Global): ?UnsubscribeType
 	{
-		$section = $this->sections->getSectionCategory($section, $category);
-
-		$value = $section->accessMultidimensionalArray($this->index);
+		$value = $this->section->getCategory($category)->accessMultidimensionalArray($this->index);
 
 		if ($value === null) {
 			return null;
@@ -63,7 +60,7 @@ final class SubscriptionInfo
 	/**
 	 * @param array{ section: string, category: string, type: string, created_at: string }[] $results
 	 */
-	public static function fromResults(array $results, Sections $sections): self
+	public static function fromResults(array $results, Section $section): self
 	{
 		$index = [];
 
@@ -77,7 +74,7 @@ final class SubscriptionInfo
 			];
 		}
 
-		return new self($index, $sections);
+		return new self($index, $section);
 	}
 
 }

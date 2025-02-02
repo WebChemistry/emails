@@ -7,12 +7,18 @@ use WebChemistry\Emails\EmailManager;
 final readonly class SectionCategory
 {
 
+	public const Global = '*';
+
 	public function __construct(
-		public string $section,
-		public string $category,
-		public bool $unsubscribable,
+		public Section $section,
+		public string $name,
 	)
 	{
+	}
+
+	public function isUnsubscribable(): bool
+	{
+		return $this->section->isUnsubscribable();
 	}
 
 	/**
@@ -22,16 +28,16 @@ final readonly class SectionCategory
 	 */
 	public function accessMultidimensionalArray(array $array): mixed
 	{
-		if ($this->category === EmailManager::GlobalCategory) {
-			return $array[$this->section][EmailManager::GlobalCategory] ?? null;
+		if ($this->name === EmailManager::GlobalCategory) {
+			return $array[$this->section->name][EmailManager::GlobalCategory] ?? null;
 		} else {
-			return $array[$this->section][EmailManager::GlobalCategory] ?? $array[$this->section][$this->category] ?? null;
+			return $array[$this->section->name][EmailManager::GlobalCategory] ?? $array[$this->section->name][$this->name] ?? null;
 		}
 	}
 
 	public function isGlobal(): bool
 	{
-		return $this->category === EmailManager::GlobalCategory;
+		return $this->name === self::Global;
 	}
 
 }

@@ -4,7 +4,7 @@ namespace WebChemistry\Emails\Subscribe;
 
 use InvalidArgumentException;
 use WebChemistry\Emails\Common\Encoder;
-use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Section\SectionCategory;
 
 final readonly class SubscribeManager
 {
@@ -18,12 +18,11 @@ final readonly class SubscribeManager
 	public function addResubscribeQueryParameter(
 		string $link,
 		string $email,
-		string $section,
-		string $category = EmailManager::GlobalCategory,
+		SectionCategory $category,
 		?string ...$arguments
 	): string
 	{
-		return $this->addQueryParameter('r', $link, $email, $section, $category, $arguments);
+		return $this->addQueryParameter('r', $link, $email, $category, $arguments);
 	}
 
 	public function loadResubscribeQueryParameter(string $link): ?DecodedResubscribeValue
@@ -34,12 +33,11 @@ final readonly class SubscribeManager
 	public function addUnsubscribeQueryParameter(
 		string $link,
 		string $email,
-		string $section,
-		string $category = EmailManager::GlobalCategory,
+		SectionCategory $category,
 		?string ...$arguments
 	): string
 	{
-		return $this->addQueryParameter('u', $link, $email, $section, $category, $arguments);
+		return $this->addQueryParameter('u', $link, $email, $category, $arguments);
 	}
 
 	public function loadUnsubscribeQueryParameter(string $link): ?DecodedUnsubscribeValue
@@ -54,8 +52,7 @@ final readonly class SubscribeManager
 		string $parameterName,
 		string $link,
 		string $email,
-		string $section,
-		string $category,
+		SectionCategory $category,
 		array $arguments = [],
 	): string
 	{
@@ -65,11 +62,15 @@ final readonly class SubscribeManager
 			throw new InvalidArgumentException("Link already contains $parameterName value.");
 		}
 
-		if ($category === EmailManager::GlobalCategory) {
-			$category = null;
+		if ($category->isGlobal()) {
+			$categoryName = null;
+		} else {
+			$categoryName = $category->name;
 		}
 
-		$value = $this->encoder->encode($email, $section, $category, ...$arguments);
+		$sectionName = $category->section->name;
+
+		$value = $this->encoder->encode($email, $sectionName, $categoryName, ...$arguments);
 
 		return $link . (str_contains($link, '?') ? '&' : '?') . "$parameterName=$value";
 	}
@@ -110,7 +111,7 @@ final readonly class SubscribeManager
 
 		$email = $values[0] ?? null;
 		$section = $values[1] ?? null;
-		$category = $values[2] ?? EmailManager::GlobalCategory;
+		$category = $values[2] ?? SectionCategory::Global;
 
 		if (!is_string($email) || !is_string($section)) {
 			return null;
