@@ -71,7 +71,7 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 
 			if ($bounceType === 'soft') {
 				$manager->softBounce($email);
-			} else {
+			} else if ($bounceType === 'hard') {
 				$manager->hardBounce($email);
 			}
 		} else if ($event === 'complained') {

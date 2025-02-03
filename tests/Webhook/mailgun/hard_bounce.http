@@ -21,6 +21,7 @@ User-Agent: Go-http-client/1.1
 		"reason": "suppress-bounce",
 		"delivery-status": {
 			"attempt-no": 1,
+			"bounce-type": "hard",
 			"message": "",
 			"code": 605,
 			"enhanced-code": "",

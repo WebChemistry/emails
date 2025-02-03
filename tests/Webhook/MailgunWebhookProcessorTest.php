@@ -85,7 +85,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 	public function testHardBounce(): void
 	{
-		$request = $this->createRequest(__DIR__ . '/mailgun/permanent_failure.http');
+		$request = $this->createRequest(__DIR__ . '/mailgun/hard_bounce.http');
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
