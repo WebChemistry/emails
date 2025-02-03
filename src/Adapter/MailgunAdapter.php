@@ -4,9 +4,9 @@ namespace WebChemistry\Emails\Adapter;
 
 use InvalidArgumentException;
 use Mailgun\Mailgun;
-use Mailgun\Message\MessageBuilder;
 use SensitiveParameter;
 use WebChemistry\Emails\HtmlMessage;
+use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\Message;
 
 final readonly class MailgunAdapter extends AbstractAdapter
@@ -32,9 +32,13 @@ final readonly class MailgunAdapter extends AbstractAdapter
 
 		$sender = $message->getSender();
 
-		$builder = new MessageBuilder();
+		$builder = $this->client->messages()->getBatchMessage($this->domain);
 
 		$builder->setFromAddress($sender->email, array_filter(['full_name' => $sender->name]));
+		$builder->setSubject($message->getSubject());
+		$builder->setHtmlBody($message->getBody());
+
+		$generator = $options[Mailer::UnsubscribeGeneratorOption] ?? null;
 
 		foreach ($recipients as $recipient) {
 			$variables = [];
@@ -43,14 +47,19 @@ final readonly class MailgunAdapter extends AbstractAdapter
 				$variables['full_name'] = $recipient->name;
 			}
 
+			if ($generator) {
+				$variables['unsubscribe_link'] = $generator($recipient->email);
+			}
+
 			$builder->addToRecipient($recipient->email, $variables);
 		}
 
-		$builder->setSubject($message->getSubject());
+		if ($generator) {
+			$builder->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+			$builder->addCustomHeader('List-Unsubscribe', '<%recipient.unsubscribe_link%>');
+		}
 
-		$builder->setHtmlBody($message->getBody());
-
-		$this->client->messages()->send($this->domain, $builder->getMessage());
+		$builder->finalize();
 	}
 
 }

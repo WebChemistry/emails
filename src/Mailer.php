@@ -9,6 +9,7 @@ interface Mailer
 
 	public const SectionOption = '_section';
 	public const CategoryOption = '_category';
+	public const UnsubscribeGeneratorOption = 'unsubscribe_generator';
 
 	/**
 	 * @param EmailAccount[] $recipients

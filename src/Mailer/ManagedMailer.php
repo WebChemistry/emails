@@ -4,6 +4,7 @@ namespace WebChemistry\Emails\Mailer;
 
 use WebChemistry\Emails\EmailAccountRegistry;
 use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Link\SubscribeLinkGenerator;
 use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
@@ -16,6 +17,7 @@ final readonly class ManagedMailer implements Mailer
 	public function __construct(
 		private MailerAdapter $adapter,
 		private EmailManager $manager,
+		private ?SubscribeLinkGenerator $subscribeLinkGenerator = null,
 	)
 	{
 	}
@@ -40,6 +42,10 @@ final readonly class ManagedMailer implements Mailer
 
 		$options[self::CategoryOption] = $category;
 		$options[self::SectionOption] = $section;
+
+		if ($this->subscribeLinkGenerator?->canUse($section, $category)) {
+			$options[self::UnsubscribeGeneratorOption] = fn (string $email) => $this->subscribeLinkGenerator->unsubscribe($email, $section, $category);
+		}
 
 		$this->adapter->send($registry->getAccounts(), $message, $options);
 
