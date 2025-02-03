@@ -3,14 +3,22 @@
 namespace WebChemistry\Emails\Bridge\Nette;
 
 use Nette\DI\CompilerExtension;
+use Nette\DI\Definitions\Statement;
 use Nette\Schema\Expect;
 use Nette\Schema\Schema;
 use WebChemistry\Emails\Command\GenerateSecretCommand;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Confirmation\ConfirmationManager;
+use WebChemistry\Emails\Connection\ConnectionAccessor;
+use WebChemistry\Emails\Connection\DefaultConnectionAccessor;
+use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
+use WebChemistry\Emails\Model\SubscriptionModel;
+use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Section\SectionBlueprint;
+use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Subscribe\SubscribeManager;
 
 final class EmailsExtension extends CompilerExtension
@@ -28,6 +36,10 @@ final class EmailsExtension extends CompilerExtension
 			'softBounce' => Expect::structure([
 				'limit' => Expect::int(3),
 			])->castTo('array'),
+			'sections' => Expect::arrayOf(Expect::structure([
+				'name' => Expect::string()->required(),
+				'categories' => Expect::arrayOf(Expect::string())->default([]),
+			])->castTo('array')),
 		])->castTo('array');
 	}
 
@@ -38,7 +50,8 @@ final class EmailsExtension extends CompilerExtension
 		$config = $this->getConfig();
 
 		$builder->addDefinition($this->prefix('manager'))
-			->setFactory(EmailManager::class);
+			->setType(EmailManager::class)
+			->setFactory(DefaultEmailManager::class);
 
 		$builder->addDefinition($this->prefix('model.inactivity'))
 			->setFactory(InactivityModel::class, [$config['inactivity']['limit']]);
@@ -46,8 +59,22 @@ final class EmailsExtension extends CompilerExtension
 		$builder->addDefinition($this->prefix('model.softBounce'))
 			->setFactory(SoftBounceModel::class, ['bounceLimit' => $config['softBounce']['limit']]);
 
-//		$builder->addDefinition($this->prefix('model.subscriber'))
-//			->setFactory(SubscriberModel::class);
+		$builder->addDefinition($this->prefix('mode.subscription'))
+			->setFactory(SubscriptionModel::class);
+
+		$builder->addDefinition($this->prefix('mode.suspension'))
+			->setFactory(SuspensionModel::class);
+
+		$builder->addDefinition($this->prefix('connectionAccessor'))
+			->setType(ConnectionAccessor::class)
+			->setFactory(DefaultConnectionAccessor::class);
+
+		$sections = $builder->addDefinition($this->prefix('sections'))
+			->setFactory(Sections::class);
+
+		foreach ($config['sections'] as $section) {
+			$sections->addSetup('add', [new Statement(SectionBlueprint::class, [$section['name'], $section['categories']])]);
+		}
 
 		if ($config['encoder']['secret']) {
 			$builder->addDefinition($this->prefix('encoder'))
