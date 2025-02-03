@@ -29,7 +29,7 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 	protected function setUp(): void
 	{
 		$this->clock = new MockClock(new DateTimeImmutable('2021-01-01 12:00:00'));
-		$this->plugin = new LastSentPlugin($this->connectionAccessor,'8 hours', $this->clock);
+		$this->plugin = new LastSentPlugin('8 hours', $this->connectionAccessor, $this->clock);
 
 		$this->dispatcher->addSubscriber($this->plugin);
 	}

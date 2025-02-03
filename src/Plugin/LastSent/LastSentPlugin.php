@@ -17,8 +17,8 @@ final class LastSentPlugin implements EventSubscriberInterface
 	use ManipulationModel;
 
 	public function __construct(
-		private ConnectionAccessor $connectionAccessor,
 		private string $relativeFormat,
+		private ConnectionAccessor $connectionAccessor,
 		private ?ClockInterface $clock = null,
 	)
 	{
