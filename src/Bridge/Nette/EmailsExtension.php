@@ -39,6 +39,7 @@ final class EmailsExtension extends CompilerExtension
 			'sections' => Expect::arrayOf(Expect::structure([
 				'name' => Expect::string()->required(),
 				'categories' => Expect::arrayOf(Expect::string())->default([]),
+				'unsubscribable' => Expect::bool(true),
 			])->castTo('array')),
 		])->castTo('array');
 	}
@@ -73,7 +74,7 @@ final class EmailsExtension extends CompilerExtension
 			->setFactory(Sections::class);
 
 		foreach ($config['sections'] as $section) {
-			$sections->addSetup('add', [new Statement(SectionBlueprint::class, [$section['name'], $section['categories']])]);
+			$sections->addSetup('add', [new Statement(SectionBlueprint::class, [$section['name'], $section['categories'], $section['unsubscribable']])]);
 		}
 
 		if ($config['encoder']['secret']) {
