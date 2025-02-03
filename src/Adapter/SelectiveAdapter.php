@@ -7,7 +7,7 @@ use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 
-final readonly class SelectiveMailer implements MailerAdapter
+final readonly class SelectiveAdapter implements MailerAdapter
 {
 
 	public const OptionKey = 'section';

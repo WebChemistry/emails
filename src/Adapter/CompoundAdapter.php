@@ -6,7 +6,7 @@ use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
 
-final readonly class CompoundMailer implements MailerAdapter
+final readonly class CompoundAdapter implements MailerAdapter
 {
 
 	public function __construct(
