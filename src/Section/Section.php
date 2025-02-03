@@ -21,6 +21,7 @@ final readonly class Section
 		public string $name,
 		iterable $categoryNames = [],
 		private bool $unsubscribable = true,
+		public bool $unsubscribeAllCategories = true,
 	)
 	{
 		$categories = [];

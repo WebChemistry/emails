@@ -7,11 +7,11 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Link\BaseUrlSubscribeLinkGenerator;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
-use WebChemistry\Emails\Subscribe\SubscribeManager;
 
 trait EmailManagerEnvironment
 {
@@ -25,21 +25,23 @@ trait EmailManagerEnvironment
 
 	private EmailManager $manager;
 
-	private SubscribeManager $unsubscribeManager;
-
 	private SubscriptionModel $subscriptionModel;
 
 	private SuspensionModel $suspensionModel;
 
 	private EventDispatcher $dispatcher;
 
+	private BaseUrlSubscribeLinkGenerator $unsubscribeLinkGenerator;
+
 	#[Before(10)]
 	public function setUpWebhook(): void
 	{
+		$encoder = new Encoder('secret');
+
 		$this->inactivityModel = new InactivityModel(2, $this->connectionAccessor);
 		$this->softBounceModel = new SoftBounceModel($this->connectionAccessor);
 		$this->subscriptionModel = new SubscriptionModel($this->connectionAccessor);
-		$this->unsubscribeManager = new SubscribeManager(new Encoder('secret'));
+		$this->unsubscribeLinkGenerator = new BaseUrlSubscribeLinkGenerator('http://example.com', $this->sections, $encoder);
 		$this->suspensionModel = new SuspensionModel($this->connectionAccessor);
 		$this->dispatcher = new EventDispatcher();
 		$this->manager = new DefaultEmailManager(
@@ -48,7 +50,6 @@ trait EmailManagerEnvironment
 			$this->softBounceModel,
 			$this->subscriptionModel,
 			$this->suspensionModel,
-			$this->unsubscribeManager,
 			$this->dispatcher,
 		);
 	}

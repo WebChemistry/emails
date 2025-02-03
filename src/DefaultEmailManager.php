@@ -2,20 +2,18 @@
 
 namespace WebChemistry\Emails;
 
-use LogicException;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
+use WebChemistry\Emails\Link\DecodedResubscribeValue;
+use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Section\Sections;
-use WebChemistry\Emails\Subscribe\DecodedResubscribeValue;
-use WebChemistry\Emails\Subscribe\DecodedUnsubscribeValue;
-use WebChemistry\Emails\Subscribe\SubscribeManager;
 use WebChemistry\Emails\Type\SuspensionType;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
@@ -28,7 +26,6 @@ final readonly class DefaultEmailManager implements EmailManager
 		private SoftBounceModel $softBounceModel,
 		private SubscriptionModel $subscriptionModel,
 		private SuspensionModel $suspensionModel,
-		private ?SubscribeManager $subscribeManager = null,
 		private ?EventDispatcherInterface $dispatcher = null,
 	)
 	{
@@ -58,27 +55,15 @@ final readonly class DefaultEmailManager implements EmailManager
 		}
 	}
 
-	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string
+	public function processDecodedSubscribeValue(DecodedUnsubscribeValue|DecodedResubscribeValue|null $value): void
 	{
-		$category = $this->sections->getCategory($section, $category);
-
-		return $this->getSubscribeManager()->addResubscribeQueryParameter($link, $email, $category);
-	}
-
-	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string
-	{
-		$category = $this->sections->getCategory($section, $category);
-
-		return $this->getSubscribeManager()->addUnsubscribeQueryParameter($link, $email, $category);
-	}
-
-	public function processSubscribeUnsubscribeQueryParameter(string $link): void
-	{
-		$value = $this->getSubscribeManager()->loadQueryParameter($link);
+		if ($value === null) {
+			return;
+		}
 
 		if ($value instanceof DecodedUnsubscribeValue) {
 			$this->unsubscribe([$value->email], $value->section, $value->category);
-		} else if ($value instanceof DecodedResubscribeValue) {
+		} else {
 			$this->resubscribe($value->email, $value->section, $value->category);
 		}
 	}
@@ -178,15 +163,6 @@ final readonly class DefaultEmailManager implements EmailManager
 
 		$this->subscriptionModel->reset($emails);
 		$this->suspensionModel->reset($emails);
-	}
-
-	private function getSubscribeManager(): SubscribeManager
-	{
-		if (!$this->subscribeManager) {
-			throw new LogicException('SubscribeManager is not set.');
-		}
-
-		return $this->subscribeManager;
 	}
 
 	/**

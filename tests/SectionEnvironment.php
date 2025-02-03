@@ -19,7 +19,7 @@ trait SectionEnvironment
 			'article',
 			'comment',
 			'mention',
-		]));
+		], unsubscribeAllCategories: false));
 		$this->sections->add(new SectionBlueprint('section', ['category']));
 	}
 

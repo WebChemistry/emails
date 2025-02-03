@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails\Bridge\Nette;
 
+use LogicException;
 use Nette\DI\CompilerExtension;
 use Nette\DI\Definitions\Statement;
 use Nette\Schema\Expect;
@@ -13,13 +14,13 @@ use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Connection\DefaultConnectionAccessor;
 use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
+use WebChemistry\Emails\Link\SubscribeLinkGenerator;
 use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
 use WebChemistry\Emails\Section\SectionBlueprint;
 use WebChemistry\Emails\Section\Sections;
-use WebChemistry\Emails\Subscribe\SubscribeManager;
 
 final class EmailsExtension extends CompilerExtension
 {
@@ -41,6 +42,10 @@ final class EmailsExtension extends CompilerExtension
 				'categories' => Expect::arrayOf(Expect::string())->default([]),
 				'unsubscribable' => Expect::bool(true),
 			])->castTo('array')),
+			'subscription' => Expect::structure([
+				'destination' => Expect::string()->required(),
+				'arguments' => Expect::array()->default([]),
+			])->castTo('array'),
 		])->castTo('array');
 	}
 
@@ -81,11 +86,23 @@ final class EmailsExtension extends CompilerExtension
 			$builder->addDefinition($this->prefix('encoder'))
 				->setFactory(Encoder::class, [$config['encoder']['secret']]);
 
-			$builder->addDefinition($this->prefix('manager.unsubscribe'))
-				->setFactory(SubscribeManager::class);
-
 			$builder->addDefinition($this->prefix('manager.confirmation'))
 				->setFactory(ConfirmationManager::class);
+		}
+
+		if ($config['subscription']['destination']) {
+			if (!$config['encoder']['secret']) {
+				throw new LogicException(sprintf('%s > encoder > secret is required for link generator.', $this->name));
+			}
+
+			$builder->addDefinition($this->prefix('linkGenerator'))
+				->setType(SubscribeLinkGenerator::class)
+				->setFactory(NetteSubscribeLinkGenerator::class,
+					[
+						'destination' => $config['subscription']['destination'],
+						'arguments' => $config['subscription']['arguments'],
+					],
+				);
 		}
 
 		$builder->addDefinition($this->prefix('command'))

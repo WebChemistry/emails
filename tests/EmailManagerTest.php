@@ -2,7 +2,6 @@
 
 namespace Tests;
 
-use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
@@ -15,9 +14,11 @@ final class EmailManagerTest extends TestCase
 
 	public function testSuccessfulUnsubscribe(): void
 	{
-		$link = $this->manager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
+		$link = $this->unsubscribeLinkGenerator->unsubscribe($this->firstEmail, 'notifications');
 
-		$this->manager->processSubscribeUnsubscribeQueryParameter($link);
+		$this->assertNotNull($link);
+
+		$this->manager->processDecodedSubscribeValue($this->unsubscribeLinkGenerator->load($link));
 
 		$this->sendingIsForbidden($this->firstEmail, 'notifications');
 	}
@@ -25,18 +26,22 @@ final class EmailManagerTest extends TestCase
 	public function testSuccessfulResubscribe(): void
 	{
 		$this->manager->unsubscribe($this->firstEmail, 'notifications');
-		$link = $this->manager->addResubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
+		$link = $this->unsubscribeLinkGenerator->resubscribe($this->firstEmail, 'notifications');
 
-		$this->manager->processSubscribeUnsubscribeQueryParameter($link);
+		$this->assertNotNull($link);
+
+		$this->manager->processDecodedSubscribeValue($this->unsubscribeLinkGenerator->load($link));
 
 		$this->sendingIsAllowed($this->firstEmail, 'notifications');
 	}
 
 	public function testUnsuccessfulUnsubscribe(): void
 	{
-		$link = $this->manager->addUnsubscribeQueryParameter('http://example.com', $this->firstEmail, 'notifications');
+		$link = $this->unsubscribeLinkGenerator->unsubscribe($this->firstEmail, 'notifications');
 
-		$this->manager->processSubscribeUnsubscribeQueryParameter(substr($link, 0, -1));
+		$this->assertNotNull($link);
+
+		$this->manager->processDecodedSubscribeValue($this->unsubscribeLinkGenerator->load(substr($link, 0, -1)));
 
 		$this->sendingIsAllowed($this->firstEmail, 'notifications');
 	}

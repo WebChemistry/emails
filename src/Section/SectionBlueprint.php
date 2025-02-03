@@ -16,6 +16,7 @@ final readonly class SectionBlueprint
 		private string $name,
 		private array $categories = [],
 		private bool $unsubscribable = true,
+		private bool $unsubscribeAllCategories = true,
 	)
 	{
 		if (strlen($this->name) > self::MaxLength) {
@@ -40,7 +41,7 @@ final readonly class SectionBlueprint
 
 	public function createSection(): Section
 	{
-		return new Section($this->name, $this->getCategoryNames($this->categories), $this->unsubscribable);
+		return new Section($this->name, $this->getCategoryNames($this->categories), $this->unsubscribable, $this->unsubscribeAllCategories);
 	}
 
 }

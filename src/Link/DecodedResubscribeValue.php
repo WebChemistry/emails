@@ -1,10 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Subscribe;
+namespace WebChemistry\Emails\Link;
 
-use WebChemistry\Emails\Section\SectionCategory;
-
-final readonly class DecodedUnsubscribeValue
+final readonly class DecodedResubscribeValue
 {
 
 	/**
@@ -13,7 +11,7 @@ final readonly class DecodedUnsubscribeValue
 	public function __construct(
 		public string $email,
 		public string $section,
-		public string $category = SectionCategory::Global,
+		public string $category,
 		public array $arguments = [],
 	)
 	{

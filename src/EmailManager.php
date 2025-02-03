@@ -2,6 +2,8 @@
 
 namespace WebChemistry\Emails;
 
+use WebChemistry\Emails\Link\DecodedResubscribeValue;
+use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Section\SectionCategory;
 
 interface EmailManager
@@ -17,12 +19,7 @@ interface EmailManager
 	 */
 	public function unsubscribe(array|string $emails, string $section, string $category = SectionCategory::Global): void;
 
-
-	public function addResubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string;
-
-	public function addUnsubscribeQueryParameter(string $link, string $email, string $section, string $category = SectionCategory::Global): string;
-
-	public function processSubscribeUnsubscribeQueryParameter(string $link): void;
+	public function processDecodedSubscribeValue(DecodedUnsubscribeValue|DecodedResubscribeValue|null $value): void;
 
 	public function resubscribe(string $email, string $section): void;
 

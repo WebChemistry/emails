@@ -1,19 +1,12 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Subscribe;
+namespace WebChemistry\Emails\Link;
 
 use InvalidArgumentException;
-use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Section\SectionCategory;
 
-final readonly class SubscribeManager
+trait SubscribeLinkGeneratorTrait
 {
-
-	public function __construct(
-		private Encoder $encoder,
-	)
-	{
-	}
 
 	public function addResubscribeQueryParameter(
 		string $link,
