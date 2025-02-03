@@ -4,11 +4,9 @@ namespace WebChemistry\Emails\Model;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
-use Doctrine\Persistence\ConnectionRegistry;
 use WebChemistry\Emails\Common\PlatformQueryHelper;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
-use WebChemistry\Emails\Exception\UnsupportedPlatformException;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Subscription\SubscriptionInfo;
@@ -61,47 +59,6 @@ final readonly class SubscriptionModel
 		}
 
 		$qb->executeStatement();
-	}
-
-	/**
-	 * @template TKey of array-key
-	 * @param array<TKey, string> $emails
-	 * @return array<TKey, string>
-	 */
-	public function filterEmailsForDelivery(array $emails, SectionCategory $category): array
-	{
-		$unsubscribed = $this->createUnsubscribedIndex($emails, $category);
-
-		return array_filter($emails, static fn ($email): bool => !isset($unsubscribed[$email]));
-	}
-
-	/**
-	 * @param string[] $emails
-	 * @return array<string, bool>
-	 */
-	private function createUnsubscribedIndex(array $emails, SectionCategory $category): array
-	{
-		if (!$emails) {
-			return [];
-		}
-
-		$qb = $this->connectionAccessor->get()->createQueryBuilder()
-			->select('email')
-			->from('email_subscriptions')
-			->where('email IN(:emails)');
-
-		$this->addSectionCondition($qb, $category);
-
-		$results = $qb->setParameter('emails', $emails, ArrayParameterType::STRING)
-			->executeQuery();
-
-		$index = [];
-
-		while (($result = $results->fetchAssociative()) !== false) {
-			$index[$result['email']] = true;
-		}
-
-		return $index;
 	}
 
 	/**
