@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\HtmlMessage;
+use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
@@ -39,7 +40,7 @@ final readonly class FileAdapter implements MailerAdapter
 			$extras['template'] = $message->getTemplate();
 		}
 
-		$json = $this->encode([
+		$values = [
 			'type' => $type,
 			'recipients' => array_map(fn (EmailAccount $acc) => $this->processAccount($acc), $recipients),
 			'message' => [
@@ -47,8 +48,23 @@ final readonly class FileAdapter implements MailerAdapter
 				'subject' => $message->getSubject(),
 				...$extras,
 			],
-			'options' => $options,
-		]);
+			'options' => $this->cleanOptions($options),
+		];
+
+
+		$generator = $options[Mailer::UnsubscribeGeneratorOption] ?? null;
+
+		if ($generator) {
+			$links = [];
+
+			foreach ($recipients as $recipient) {
+				$links[$recipient->email] = $generator($recipient->email);
+			}
+
+			$values['unsubscribe_links'] = $links;
+		}
+
+		$json = $this->encode($values);
 
 		FileSystem::write($this->directory . '/send_' . $date . '.' . uniqid() . '.json', $json);
 	}
@@ -68,6 +84,23 @@ final readonly class FileAdapter implements MailerAdapter
 		]);
 
 		FileSystem::write($this->directory . '/operation_' . $this->getDate() . '.' . uniqid() . '.json', $json);
+	}
+
+	/**
+	 * @param mixed[] $options
+	 * @return mixed[]
+	 */
+	private function cleanOptions(array $options): array
+	{
+		foreach ($options as $key => $value) {
+			if (is_array($value)) {
+				$options[$key] = $this->cleanOptions($value);
+			} else if (!is_scalar($value) && $value !== null) {
+				unset($options[$key]);
+			}
+		}
+
+		return $options;
 	}
 
 	/**
