@@ -14,6 +14,7 @@ use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Section\Sections;
+use WebChemistry\Emails\Section\SectionSubscriptionMap;
 use WebChemistry\Emails\Type\SuspensionType;
 use WebChemistry\Emails\Type\UnsubscribeType;
 
@@ -53,6 +54,11 @@ final readonly class DefaultEmailManager implements EmailManager
 		foreach ($emails as $email) {
 			$this->subscriptionModel->unsubscribe($email, UnsubscribeType::User, $category);
 		}
+	}
+
+	public function createSectionSubscriptionMap(string $section, string $email): SectionSubscriptionMap
+	{
+		return new SectionSubscriptionMap($this->subscriptionModel, $this->sections->getSection($section), $email);
 	}
 
 	public function processDecodedSubscribeValue(DecodedUnsubscribeValue|DecodedResubscribeValue|null $value): void

@@ -5,6 +5,7 @@ namespace WebChemistry\Emails;
 use WebChemistry\Emails\Link\DecodedResubscribeValue;
 use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Section\SectionCategory;
+use WebChemistry\Emails\Section\SectionSubscriptionMap;
 
 interface EmailManager
 {
@@ -18,6 +19,8 @@ interface EmailManager
 	 * @param string[]|string $emails
 	 */
 	public function unsubscribe(array|string $emails, string $section, string $category = SectionCategory::Global): void;
+
+	public function createSectionSubscriptionMap(string $section, string $email): SectionSubscriptionMap;
 
 	public function processDecodedSubscribeValue(DecodedUnsubscribeValue|DecodedResubscribeValue|null $value): void;
 

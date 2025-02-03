@@ -42,6 +42,14 @@ final readonly class SubscriptionModel
 	}
 
 	/**
+	 * @return array<string, bool>
+	 */
+	public function getSectionArrayOfBooleans(string $email, Section $section): array
+	{
+		return $this->getInfo($email, $section)->getCategoriesAsMapOfBooleans();
+	}
+
+	/**
 	 * @param string|string[] $emails
 	 */
 	public function reset(string|array $emails, ?Section $section = null): void

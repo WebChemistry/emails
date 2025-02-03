@@ -190,7 +190,7 @@ final class SubscriptionModelTest extends TestCase
 			'article' => false,
 			'comment' => true,
 			'mention' => false,
-		], $this->model->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getCategoriesAsMapOfBooleans());
+		], $this->model->getSectionArrayOfBooleans($this->firstEmail, $this->sections->getSection('notifications')));
 
 		$this->assertSame([
 			[
