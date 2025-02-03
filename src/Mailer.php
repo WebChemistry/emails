@@ -7,6 +7,9 @@ use WebChemistry\Emails\Section\SectionCategory;
 interface Mailer
 {
 
+	public const SectionOption = '_section';
+	public const CategoryOption = '_category';
+
 	/**
 	 * @param EmailAccount[] $recipients
 	 * @param mixed[] $options Mailer specific options

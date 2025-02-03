@@ -38,6 +38,9 @@ final readonly class ManagedMailer implements Mailer
 			return;
 		}
 
+		$options[self::CategoryOption] = $category;
+		$options[self::SectionOption] = $section;
+
 		$this->adapter->send($registry->getAccounts(), $message, $options);
 
 		$this->manager->afterEmailSent($registry, $section, $category);
