@@ -37,6 +37,7 @@ final readonly class MailgunAdapter extends AbstractAdapter
 		$builder->setFromAddress($sender->email, array_filter(['full_name' => $sender->name]));
 		$builder->setSubject($message->getSubject());
 		$builder->setHtmlBody($message->getBody());
+		$builder->setOpenTracking(true);
 
 		$generator = $options[Mailer::UnsubscribeGeneratorOption] ?? null;
 
