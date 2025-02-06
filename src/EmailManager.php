@@ -62,4 +62,6 @@ interface EmailManager
 	 */
 	public function inactive(array|string $emails, string $section): void;
 
+	public function cleanup(): void;
+
 }

@@ -22,6 +22,7 @@ final readonly class Section
 		iterable $categoryNames = [],
 		private bool $unsubscribable = true,
 		public bool $unsubscribeAllCategories = true,
+		public SectionConfigCollection $configCollection = new SectionConfigCollection(),
 	)
 	{
 		$categories = [];
@@ -35,7 +36,7 @@ final readonly class Section
 				throw new InvalidArgumentException(sprintf('Category %s is reserved.', SectionCategory::Global));
 			}
 
-			$categories[$category] = new SectionCategory($this, $category);
+			$categories[$category] = $this->createCategory($category);
 		}
 
 		$this->categories = $categories;
@@ -62,7 +63,7 @@ final readonly class Section
 	public function getCategory(string $name): SectionCategory
 	{
 		if ($name === SectionCategory::Global) {
-			return new SectionCategory($this, SectionCategory::Global);
+			return $this->createCategory(SectionCategory::Global);
 		}
 
 		return $this->categories[$name] ?? throw new InvalidArgumentException(sprintf('Category %s does not exist in section %s.', $name, $this->name));
@@ -112,6 +113,11 @@ final readonly class Section
 	public function getGlobalCategory(): SectionCategory
 	{
 		return $this->getCategory(SectionCategory::Global);
+	}
+
+	private function createCategory(string $name): SectionCategory
+	{
+		return new SectionCategory($this, $name);
 	}
 
 }

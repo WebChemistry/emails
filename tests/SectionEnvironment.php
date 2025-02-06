@@ -19,8 +19,16 @@ trait SectionEnvironment
 			'article',
 			'comment',
 			'mention',
-		], unsubscribeAllCategories: false));
-		$this->sections->add(new SectionBlueprint('section', ['category']));
+		], unsubscribeAllCategories: false, configs: $this->configureSection('notifications')));
+		$this->sections->add(new SectionBlueprint('section', ['category'], configs: $this->configureSection('section')));
+	}
+
+	/**
+	 * @return object[]
+	 */
+	public function configureSection(string $section): array
+	{
+		return [];
 	}
 
 }

@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
+use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
@@ -21,6 +22,9 @@ use WebChemistry\Emails\Type\UnsubscribeType;
 final readonly class DefaultEmailManager implements EmailManager
 {
 
+	/**
+	 * @param iterable<PeriodicCleaner> $cleaners
+	 */
 	public function __construct(
 		private Sections $sections,
 		private InactivityModel $inactivityModel,
@@ -28,6 +32,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		private SubscriptionModel $subscriptionModel,
 		private SuspensionModel $suspensionModel,
 		private ?EventDispatcherInterface $dispatcher = null,
+		private iterable $cleaners = [],
 	)
 	{
 	}
@@ -183,6 +188,13 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$this->softBounceModel->resetBounce($emails);
 		$this->inactivityModel->resetAllCounterSections($emails);
+	}
+
+	public function cleanup(): void
+	{
+		foreach ($this->cleaners as $cleaner) {
+			$cleaner->cleanup($this->getSections());
+		}
 	}
 
 }

@@ -4,9 +4,11 @@ namespace WebChemistry\Emails\Bridge\Nette;
 
 use LogicException;
 use Nette\DI\CompilerExtension;
+use Nette\DI\Definitions\ServiceDefinition;
 use Nette\DI\Definitions\Statement;
 use Nette\Schema\Expect;
 use Nette\Schema\Schema;
+use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Command\GenerateSecretCommand;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Confirmation\ConfirmationManager;
@@ -41,6 +43,7 @@ final class EmailsExtension extends CompilerExtension
 				'name' => Expect::string()->required(),
 				'categories' => Expect::arrayOf(Expect::string())->default([]),
 				'unsubscribable' => Expect::bool(true),
+				'configs' => Expect::arrayOf(Expect::type(Statement::class)),
 			])->castTo('array')),
 			'subscription' => Expect::structure([
 				'destination' => Expect::string()->required(),
@@ -79,7 +82,12 @@ final class EmailsExtension extends CompilerExtension
 			->setFactory(Sections::class);
 
 		foreach ($config['sections'] as $section) {
-			$sections->addSetup('add', [new Statement(SectionBlueprint::class, [$section['name'], $section['categories'], $section['unsubscribable']])]);
+			$sections->addSetup('add', [new Statement(SectionBlueprint::class, [
+				$section['name'],
+				$section['categories'],
+				$section['unsubscribable'],
+				'configs' => $section['configs'],
+			])]);
 		}
 
 		if ($config['encoder']['secret']) {
@@ -107,6 +115,16 @@ final class EmailsExtension extends CompilerExtension
 
 		$builder->addDefinition($this->prefix('command'))
 			->setFactory(GenerateSecretCommand::class);
+	}
+
+	public function beforeCompile(): void
+	{
+		$builder = $this->getContainerBuilder();
+
+		$manager = $builder->getDefinition($this->prefix('manager'));
+		assert($manager instanceof ServiceDefinition);
+
+		$manager->getFactory()->arguments['cleaners'] = $builder->findByType(PeriodicCleaner::class);
 	}
 
 }

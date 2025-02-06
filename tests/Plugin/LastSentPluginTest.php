@@ -8,7 +8,9 @@ use Symfony\Component\Clock\MockClock;
 use Tests\ConnectionInitializer;
 use Tests\EmailManagerEnvironment;
 use Tests\TestCase;
+use WebChemistry\Emails\Plugin\LastSent\LastSentConfig;
 use WebChemistry\Emails\Plugin\LastSent\LastSentPlugin;
+use WebChemistry\Emails\Section\SectionBlueprint;
 use WebChemistry\Emails\StringEmailRegistry;
 
 final class LastSentPluginTest extends TestCase implements ConnectionInitializer
@@ -23,15 +25,26 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 	public static function initializeConnection(Connection $connection): void
 	{
 		$connection->executeStatement('DROP TABLE IF EXISTS email_last_sent');
-		$connection->executeStatement('CREATE TABLE email_last_sent (email VARCHAR(255) PRIMARY KEY, sent_at DATETIME)');
+		$connection->executeStatement('CREATE TABLE email_last_sent (email VARCHAR(255), section VARCHAR(255), sent_at DATETIME, PRIMARY KEY(email, section))');
 	}
 
 	protected function setUp(): void
 	{
 		$this->clock = new MockClock(new DateTimeImmutable('2021-01-01 12:00:00'));
-		$this->plugin = new LastSentPlugin('8 hours', $this->connectionAccessor, $this->clock);
+		$this->plugin = new LastSentPlugin($this->connectionAccessor, $this->clock);
 
 		$this->dispatcher->addSubscriber($this->plugin);
+
+		$this->sections->add(new SectionBlueprint('another', configs: [new LastSentConfig('4 hours')]));
+	}
+
+	public function configureSection(string $section): array
+	{
+		if ($section === 'notifications') {
+			return [new LastSentConfig('8 hours')];
+		}
+
+		return [];
 	}
 
 	public function testNoRecord(): void
@@ -51,6 +64,13 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 				'sent_at' => '2021-01-01 12:00:00',
 			],
 		], $this->databaseSnapshot());
+	}
+
+	public function testSaveRecordInForbiddenSection(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'section');
+
+		$this->assertSame([], $this->databaseSnapshot());
 	}
 
 	public function testSentInForbiddenTime(): void
@@ -81,7 +101,7 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 
 		$this->clock->sleep((8 * 60 * 60) - 1);
 
-		$this->assertSame(0, $this->plugin->cleanup());
+		$this->plugin->cleanup($this->sections);
 
 		$this->assertSame([
 			[
@@ -97,9 +117,33 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 
 		$this->clock->sleep(8 * 60 * 60);
 
-		$this->assertSame(1, $this->plugin->cleanup());
+		$this->plugin->cleanup($this->sections);
 
 		$this->assertSame([], $this->databaseSnapshot());
+	}
+
+	public function testCleanupTwoSections(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'another');
+
+		$this->clock->sleep(3 * 60 * 60);
+
+		$this->plugin->cleanup($this->sections);
+
+		$this->assertCount(2, $this->databaseSnapshot());
+	}
+
+	public function testCleanupTwoSectionsAfterButOnlyOneMeetConditions(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'another');
+
+		$this->clock->sleep(4 * 60 * 60);
+
+		$this->plugin->cleanup($this->sections);
+
+		$this->assertCount(1, $this->databaseSnapshot());
 	}
 
 	/**

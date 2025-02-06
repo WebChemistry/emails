@@ -5,6 +5,7 @@ namespace WebChemistry\Emails\Plugin\LastSent;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
+use WebChemistry\Emails\Section\Section;
 
 trait EmailLastSentEntity // @phpstan-ignore trait.unused
 {
@@ -14,6 +15,10 @@ trait EmailLastSentEntity // @phpstan-ignore trait.unused
 	#[Id]
 	#[Column(type: 'string', length: 255)]
 	private string $email;
+
+	#[Id]
+	#[Column(type: 'string', length: Section::MaxLength)]
+	private string $section;
 
 	#[Column(type: 'datetime_immutable')]
 	private DateTimeImmutable $sentAt;
