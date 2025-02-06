@@ -15,6 +15,14 @@ final class Sections
 		$this->sections[Section::Essential] = new Section(Section::Essential, unsubscribable: false);
 	}
 
+	/**
+	 * @return Section[]
+	 */
+	public function getAll(): array
+	{
+		return $this->sections;
+	}
+
 	public function getEssentialCategory(): SectionCategory
 	{
 		return $this->getCategory(Section::Essential);
