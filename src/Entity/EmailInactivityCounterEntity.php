@@ -4,6 +4,7 @@ namespace WebChemistry\Emails\Entity;
 
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
+use WebChemistry\Emails\Section\Section;
 
 trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 {
@@ -15,7 +16,7 @@ trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 	private string $email;
 
 	#[Id]
-	#[Column(type: 'string', length: 15)]
+	#[Column(type: 'string', length: Section::MaxLength)]
 	private string $section;
 
 	#[Column(type: 'integer', options: ['default' => '0'])]
