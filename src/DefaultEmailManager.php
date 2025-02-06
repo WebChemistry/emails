@@ -32,6 +32,11 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 	}
 
+	public function getSections(): Sections
+	{
+		return $this->sections;
+	}
+
 	/**
 	 * @param string[]|string $emails
 	 */

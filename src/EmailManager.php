@@ -5,10 +5,13 @@ namespace WebChemistry\Emails;
 use WebChemistry\Emails\Link\DecodedResubscribeValue;
 use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Section\SectionCategory;
+use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Section\SectionSubscriptionMap;
 
 interface EmailManager
 {
+
+	public function getSections(): Sections;
 
 	/**
 	 * @param string[]|string $emails
