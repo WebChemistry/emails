@@ -24,6 +24,13 @@ final class MailerTesterNinjaValidator implements EmailValidator
 		$response = $this->client->request('GET', sprintf('https://happy.mailtester.ninja/ninja?email=%s&token=%s', $email, $this->secret));
 		$payload = $response->toArray();
 		$message = $payload['message'] ?? null;
+
+		if ($message === 'Key Timeout') {
+			trigger_error('Mail tester ninja validator: Key Timeout', E_USER_WARNING);
+
+			return new ValidationResult(true, $message, self::class);
+		}
+
 		$ok = in_array($message, ['Accepted', 'Catch-All', 'Limited', 'MX Error', 'Timeout'], true);
 
 		return new ValidationResult($ok, $message, self::class);
