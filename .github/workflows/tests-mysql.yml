@@ -4,8 +4,11 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    name: Tests
+    name: Tests with PHP ${{ matrix.php-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [ '8.3', '8.4' ]
     services:
       mysql:
         image: mysql:8.0
@@ -19,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: ${{ matrix.php-version }}
           coverage: none
           extensions: pdo_mysql
 

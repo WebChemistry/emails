@@ -4,13 +4,16 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    name: Tests
+    name: Tests with PHP ${{ matrix.php-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [ '8.3', '8.4' ]
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: ${{ matrix.php-version }}
           coverage: none
 
       - run: composer install --no-progress --prefer-dist
