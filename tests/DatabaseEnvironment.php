@@ -34,7 +34,9 @@ trait DatabaseEnvironment
 			'DROP TABLE IF EXISTS email_suspensions;' .
 			'CREATE TABLE email_suspensions (email VARCHAR(255), type VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, type));' .
 			'DROP TABLE IF EXISTS email_subscriptions;' .
-			'CREATE TABLE email_subscriptions (email VARCHAR(255), section VARCHAR(255), category VARCHAR(255), type VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, section, category));'
+			'CREATE TABLE email_subscriptions (email VARCHAR(255), section VARCHAR(255), category VARCHAR(255), type VARCHAR(255), created_at DATETIME, PRIMARY KEY(email, section, category));' .
+			'DROP TABLE IF EXISTS tokens;' .
+			'CREATE TABLE tokens (id VARCHAR(255) PRIMARY KEY, token VARCHAR(255), created DATETIME);'
 		);
 
 		if (in_array(ConnectionInitializer::class, class_implements(static::class))) {

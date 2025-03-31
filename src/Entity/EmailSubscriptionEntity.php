@@ -12,7 +12,7 @@ use WebChemistry\Emails\Type\UnsubscribeType;
 trait EmailSubscriptionEntity // @phpstan-ignore trait.unused
 {
 
-	public const TableName = 'email_subscriptions';
+	public const string TableName = 'email_subscriptions';
 
 	#[Id]
 	#[Column(type: 'string', length: 255)]

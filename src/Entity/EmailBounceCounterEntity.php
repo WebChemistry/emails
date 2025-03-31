@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping\Id;
 trait EmailBounceCounterEntity // @phpstan-ignore trait.unused
 {
 
-	public const TableName = 'email_bounce_counters';
+	public const string TableName = 'email_bounce_counters';
 
 	#[Id]
 	#[Column(type: 'string', length: 255)]

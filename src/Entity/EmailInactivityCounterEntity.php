@@ -9,7 +9,7 @@ use WebChemistry\Emails\Section\Section;
 trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 {
 
-	public const TableName = 'email_inactivity_counters';
+	public const string TableName = 'email_inactivity_counters';
 
 	#[Id]
 	#[Column(type: 'string', length: 255)]

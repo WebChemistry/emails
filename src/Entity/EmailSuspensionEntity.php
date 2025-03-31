@@ -10,7 +10,7 @@ use WebChemistry\Emails\Type\SuspensionType;
 trait EmailSuspensionEntity // @phpstan-ignore trait.unused
 {
 
-	public const TableName = 'email_suspensions';
+	public const string TableName = 'email_suspensions';
 
 	#[Id]
 	#[Column(type: 'string', length: 255)]
