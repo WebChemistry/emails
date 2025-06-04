@@ -8,6 +8,7 @@ use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Tests\DatabaseEnvironment;
 use Tests\TestCase;
+use WebChemistry\Emails\Token\StaticTokenProvider;
 use WebChemistry\Emails\Token\Token;
 use WebChemistry\Emails\Token\TokenProvider;
 use WebChemistry\Emails\Validator\NinjaMailerTesterValidator;
@@ -22,23 +23,7 @@ final class NinjaMailerTesterValidatorTest extends TestCase
 	{
 		self::mockTime('2021-01-01 12:00:00');
 
-		$tokenProvider = new class implements TokenProvider {
-
-			public bool $updated = false;
-
-			public function getToken(): Token
-			{
-				return new Token('original');
-			}
-
-			public function update(): Token
-			{
-				$this->updated = true;
-
-				return new Token('updated');
-			}
-
-		};
+		$tokenProvider = new StaticTokenProvider('static');
 		$httpClient = new MockHttpClient([
 			MockResponse::fromFile(__DIR__ . '/http/ok.json'),
 		]);
@@ -46,7 +31,6 @@ final class NinjaMailerTesterValidatorTest extends TestCase
 
 		$validator->validate('john.doe@example.com');
 
-		$this->assertFalse($tokenProvider->updated);
 		$this->assertSame(1, $httpClient->getRequestsCount());
 	}
 
