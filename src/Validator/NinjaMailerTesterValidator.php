@@ -2,7 +2,7 @@
 
 namespace WebChemistry\Emails\Validator;
 
-use SensitiveParameter;
+use Symfony\Component\Clock\DatePoint;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use WebChemistry\Emails\Token\TokenProvider;
 
@@ -28,21 +28,20 @@ final readonly class NinjaMailerTesterValidator implements EmailValidator
 	{
 		$token = $this->tokenProvider->getToken();
 
-		$response = $this->client->request('GET', sprintf('https://happy.mailtester.ninja/ninja?email=%s&token=%s', $email, $token));
+		// refresh is required every 24 hours
+		$min = new DatePoint('- 23 hours');
+
+		if ($token->createdAt < $min) {
+			$token = $this->tokenProvider->update();
+		}
+
+		$response = $this->client->request('GET', sprintf('https://happy.mailtester.ninja/ninja?email=%s&token=%s', $email, $token->value));
 		$payload = $response->toArray();
 		$message = $payload['message'] ?? null;
 
 		if ($message === 'Token Timeout') {
-			$newToken = false;
-
 			if (!$isRetry) {
-				$newToken = $this->tokenProvider->update();
-			}
-
-			if (!$newToken) {
-				trigger_error('Mail tester ninja validator: Token Timeout', E_USER_WARNING);
-
-				return new ValidationResult(true, $message, self::class);
+				$this->tokenProvider->update();
 			}
 
 			return $this->send($email, true);

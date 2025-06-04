@@ -19,12 +19,16 @@ final class NinjaMailTesterDoctrineTokenProviderTest extends TestCase
 
 	public function testInsert(): void
 	{
+		self::mockTime('2021-01-01 12:00:00');
+
 		$httpClient = new MockHttpClient([
 			MockResponse::fromFile(__DIR__ . '/http/mail_tester_ninja_token.json'),
 		]);
 		$provider = $this->createProvider($httpClient);
 
-		$this->assertSame('Mk5ETGRlQnd3WkZYOGszWXlwQV...WDhQR0pJU0tLa1R4WW5BbXRJVA==', $provider->getToken());
+		$token = $provider->getToken();
+		$this->assertSame('Mk5ETGRlQnd3WkZYOGszWXlwQV...WDhQR0pJU0tLa1R4WW5BbXRJVA==', $token->value);
+		$this->assertSame('2021-01-01 12:00:00', $token->createdAt->format('Y-m-d H:i:s'));
 	}
 
 	public function testUpsert(): void
@@ -37,7 +41,10 @@ final class NinjaMailTesterDoctrineTokenProviderTest extends TestCase
 		]);
 		$provider = $this->createProvider($httpClient);
 
-		$this->assertSame('Mk5ETGRlQnd3WkZYOGszWXlwQV...WDhQR0pJU0tLa1R4WW5BbXRJVA==', $provider->update());
+		$token = $provider->update();
+
+		$this->assertSame('Mk5ETGRlQnd3WkZYOGszWXlwQV...WDhQR0pJU0tLa1R4WW5BbXRJVA==', $token->value);
+		$this->assertSame('2021-01-01 12:00:00', $token->createdAt->format('Y-m-d H:i:s'));
 		$this->assertSame([
 			[
 				'id' => 'mail_tester_ninja',
@@ -48,7 +55,9 @@ final class NinjaMailTesterDoctrineTokenProviderTest extends TestCase
 
 		self::mockTime('2021-01-01 13:00:00');
 
-		$this->assertSame('second', $provider->update());
+		$token = $provider->update();
+		$this->assertSame('second', $token->value);
+		$this->assertSame('2021-01-01 13:00:00', $token->createdAt->format('Y-m-d H:i:s'));
 		$this->assertSame([
 			[
 				'id' => 'mail_tester_ninja',
@@ -60,7 +69,9 @@ final class NinjaMailTesterDoctrineTokenProviderTest extends TestCase
 
 		$provider->reset();
 
-		$this->assertSame('second', $provider->getToken());
+		$token = $provider->getToken();
+		$this->assertSame('second', $token->value);
+		$this->assertSame('2021-01-01 13:00:00', $token->createdAt->format('Y-m-d H:i:s'));
 	}
 
 	private function createProvider(HttpClientInterface $httpClient): NinjaMailTesterDoctrineTokenProvider

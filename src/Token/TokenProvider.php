@@ -5,8 +5,8 @@ namespace WebChemistry\Emails\Token;
 interface TokenProvider
 {
 
-	public function getToken(): string;
+	public function getToken(): Token;
 
-	public function update(): ?string;
+	public function update(): Token;
 
 }

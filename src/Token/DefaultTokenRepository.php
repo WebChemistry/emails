@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails\Token;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\DatePoint;
 
@@ -18,19 +19,25 @@ final readonly class DefaultTokenRepository implements TokenRepository
 	{
 	}
 
-	public function getToken(string $id): ?string
+	public function getToken(string $id): ?Token
 	{
 		$stmt = $this->connection->createQueryBuilder()
 			->from($this->tableName)
-			->select($this->tokenColumn)
+			->select([$this->tokenColumn, $this->createdColumn])
 			->where(sprintf('%s = :id', $this->idColumn))
 			->setParameter('id', $id)
 			->setMaxResults(1)
 			->executeQuery();
 
-		$token = $stmt->fetchFirstColumn()[0] ?? null;
+		$rows = $stmt->fetchAllAssociative();
+		$token = $rows[0][$this->tokenColumn] ?? null;
+		$created = $rows[0][$this->createdColumn] ?? null;
 
-		return is_string($token) ? $token : null;
+		if (!is_string($token) || !is_string($created)) {
+			return null;
+		}
+
+		return new Token($token, new DateTimeImmutable($created));
 	}
 
 	public function upsert(string $id, string $token): void

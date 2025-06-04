@@ -1,0 +1,10 @@
+{
+	"email": "john.doe@example.com",
+	"code": "ok",
+	"message": "Accepted",
+	"user": "John Doe",
+	"domain": "example.cz",
+	"mx": "mx1.example.cz",
+	"connections": 2,
+	"detail": ""
+}
