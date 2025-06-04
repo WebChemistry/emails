@@ -32,7 +32,7 @@ final readonly class NinjaMailerTesterValidator implements EmailValidator
 		$payload = $response->toArray();
 		$message = $payload['message'] ?? null;
 
-		if ($message === 'Key Timeout') {
+		if ($message === 'Token Timeout') {
 			$newToken = false;
 
 			if (!$isRetry) {
@@ -40,7 +40,7 @@ final readonly class NinjaMailerTesterValidator implements EmailValidator
 			}
 
 			if (!$newToken) {
-				trigger_error('Mail tester ninja validator: Key Timeout', E_USER_WARNING);
+				trigger_error('Mail tester ninja validator: Token Timeout', E_USER_WARNING);
 
 				return new ValidationResult(true, $message, self::class);
 			}
