@@ -12,7 +12,9 @@ use WebChemistry\Emails\OperationType;
 final readonly class MailerliteAdapter extends AbstractAdapter
 {
 
+	/** @deprecated  */
 	public const Autoresponders = 'autoresponders';
+	/** @deprecated  */
 	public const Resubscribe = 'resubscribe';
 
 	public function __construct(
@@ -34,23 +36,6 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 			return;
 		}
 
-		if ($groups) {
-			$responses = [];
-
-			foreach ($groups as $group) {
-				$responses[] = $this->sendApiRequest('POST', '/api/v2/groups/' . $group . '/subscribers/import', [
-					'subscribers' => array_map(fn (EmailAccount $account) => $this->accountToArray($account), $accounts),
-					...$this->getImportOptions($options, $type),
-				]);
-			}
-
-			foreach ($responses as $response) {
-				$response->getContent(); // calling getContent() just to throw exception if response is not successful
-			}
-
-			return;
-		}
-
 		// MailerLite API supports max 50 requests per batch
 		foreach (array_chunk($accounts, 50) as $chunk) {
 			$requests = [];
@@ -59,21 +44,22 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 			foreach ($chunk as $account) {
 				$requests[] = [
 					'method' => 'POST',
-					'path' => '/api/v2/subscribers',
-					'body' => $this->accountToArray($account),
+					'path' => '/api/subscribers',
+					'body' => $this->accountToArray($account, $groups),
 				];
 			}
 
-			$this->sendApiRequest('POST', '/api/v2/batch', [
+			$this->sendApiRequest('POST', '/api/batch', [
 				'requests' => $requests,
 			])->getContent(); // calling getContent() just to throw exception if response is not successful
 		}
 	}
 
 	/**
+	 * @param string[] $groups
 	 * @return mixed[]
 	 */
-	private function accountToArray(EmailAccount $account): array
+	private function accountToArray(EmailAccount $account, array $groups = []): array
 	{
 		$values = [
 			'email' => $account->email,
@@ -87,30 +73,11 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 			$values['fields'] = $account->fields;
 		}
 
+		if ($groups) {
+			$values['groups'] = $groups;
+		}
+
 		return $values;
-	}
-
-	/**
-	 * @param mixed[] $options
-	 * @return mixed[]
-	 */
-	private function getImportOptions(array $options, OperationType $type): array
-	{
-		$vals = [];
-
-		if (isset($options[self::Resubscribe])) {
-			$vals[self::Resubscribe] = $options[self::Resubscribe];
-		} else {
-			$vals[self::Resubscribe] = $type === OperationType::Insert;
-		}
-
-		if (isset($options[self::Autoresponders])) {
-			$vals[self::Autoresponders] = $options[self::Autoresponders];
-		} else {
-			$vals[self::Autoresponders] = $type === OperationType::Insert;
-		}
-
-		return $vals;
 	}
 
 	/**
@@ -120,7 +87,7 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 	{
 		$options = [
 			'headers' => [
-				'X-MailerLite-ApiKey' => $this->secret,
+				'Authorization' => sprintf('Bearer %s', $this->secret),
 			],
 		];
 
@@ -128,7 +95,7 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 			$options['json'] = $body;
 		}
 
-		return $this->client->request($method, 'https://api.mailerlite.com' . $path, $options);
+		return $this->client->request($method, 'https://connect.mailerlite.com' . $path, $options);
 	}
 
 }
