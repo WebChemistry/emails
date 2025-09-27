@@ -42,6 +42,7 @@ final class Encoder
 		if ($this->type === EncodeType::Salt) {
 			$arguments[] = bin2hex(random_bytes(10));
 		} else if ($this->type === EncodeType::Encrypted) {
+			/** @var int|false $length */
 			$length = openssl_cipher_iv_length('aes-256-cbc');
 
 			if ($length === false) {
