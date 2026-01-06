@@ -3,17 +3,27 @@
 namespace WebChemistry\Emails\Validator;
 
 use SensitiveParameter;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\Retry\GenericRetryStrategy;
+use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class NinjaMailerTesterValidator implements EmailValidator
 {
 
+	private RetryableHttpClient $client;
+
 	public function __construct(
 		#[SensitiveParameter]
 		private string $secret,
-		private HttpClientInterface $client,
+		?HttpClientInterface $client = null,
+		int $retryDelayMs = 1000,
 	)
 	{
+		$this->client = new RetryableHttpClient(
+			$client ?? HttpClient::create(),
+			new GenericRetryStrategy(delayMs: $retryDelayMs, multiplier: 1.0, jitter: 0.0),
+		);
 	}
 
 	/**
