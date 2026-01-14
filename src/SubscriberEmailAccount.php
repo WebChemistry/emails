@@ -2,19 +2,18 @@
 
 namespace WebChemistry\Emails;
 
-/**
- * @deprecated use SubscriberEmailAccount instead
- */
-final readonly class EmailAccountWithFields extends EmailAccount
+final readonly class SubscriberEmailAccount extends EmailAccount
 {
 
 	/**
-	 * @param array<string, scalar|null> $fields
+	 * @param array<non-empty-string, scalar|null> $fields
+	 * @param array<non-empty-string, mixed> $options
 	 */
 	public function __construct(
 		string $email,
 		?string $name = null,
 		public array $fields = [],
+		public array $options = [],
 	)
 	{
 		parent::__construct($email, $name);

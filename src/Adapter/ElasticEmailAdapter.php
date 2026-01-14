@@ -9,6 +9,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\Message;
+use WebChemistry\Emails\SubscriberEmailAccount;
 use WebChemistry\Emails\TemplateMessage;
 
 final readonly class ElasticEmailAdapter extends AbstractAdapter
@@ -66,8 +67,14 @@ final readonly class ElasticEmailAdapter extends AbstractAdapter
 
 		$fields = [];
 
-		if ($account instanceof EmailAccountWithFields && $account->fields) {
+		if ($account instanceof EmailAccountWithFields) {
 			$fields = $account->fields;
+		} else if ($account instanceof SubscriberEmailAccount) {
+			$fields = $account->fields;
+
+			if ($account->options !== []) {
+				$values = array_merge($values, $account->options);
+			}
 		}
 
 		if ($account->name !== null && $account->name !== '') {

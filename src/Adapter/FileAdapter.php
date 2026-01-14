@@ -10,6 +10,7 @@ use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\MailerAdapter;
 use WebChemistry\Emails\Message;
 use WebChemistry\Emails\OperationType;
+use WebChemistry\Emails\SubscriberEmailAccount;
 use WebChemistry\Emails\TemplateMessage;
 
 final readonly class FileAdapter implements MailerAdapter
@@ -128,6 +129,14 @@ final readonly class FileAdapter implements MailerAdapter
 			return [
 				'email' => $account->toString(),
 				'fields' => $account->fields,
+			];
+		}
+
+		if ($account instanceof SubscriberEmailAccount) {
+			return [
+				'email' => $account->toString(),
+				'fields' => $account->fields,
+				'options' => $account->options,
 			];
 		}
 

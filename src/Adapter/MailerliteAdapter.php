@@ -8,6 +8,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\OperationType;
+use WebChemistry\Emails\SubscriberEmailAccount;
 
 final readonly class MailerliteAdapter extends AbstractAdapter
 {
@@ -32,7 +33,17 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 		array $options = [],
 	): void
 	{
-		if (!$accounts) {
+		$count = count($accounts);
+		if ($count === 0) {
+			return;
+		}
+
+		if ($count === 1) {
+			$account = $accounts[array_key_first($accounts)];
+
+			$this->sendApiRequest('POST', '/api/subscribers', $this->accountToArray($account, $groups))
+				->getContent();
+
 			return;
 		}
 
@@ -69,8 +80,19 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 			$values['name'] = $account->name;
 		}
 
-		if ($account instanceof EmailAccountWithFields && $account->fields) {
-			$values['fields'] = $account->fields;
+		if ($account instanceof EmailAccountWithFields) {
+			if ($account->fields !== []) {
+				$values['fields'] = $account->fields;
+			}
+
+		} else if ($account instanceof SubscriberEmailAccount) {
+			if ($account->fields !== []) {
+				$values['fields'] = $account->fields;
+			}
+
+			if ($account->options !== []) {
+				$values = array_merge($values, $account->options);
+			}
 		}
 
 		if ($groups) {
