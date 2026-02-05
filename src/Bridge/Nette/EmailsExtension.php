@@ -12,6 +12,7 @@ use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Command\GenerateSecretCommand;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Confirmation\ConfirmationManager;
+use WebChemistry\Emails\Confirmation\DefaultConfirmationManager;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Connection\DefaultConnectionAccessor;
 use WebChemistry\Emails\DefaultEmailManager;
@@ -95,7 +96,8 @@ final class EmailsExtension extends CompilerExtension
 				->setFactory(Encoder::class, [$config['encoder']['secret']]);
 
 			$builder->addDefinition($this->prefix('manager.confirmation'))
-				->setFactory(ConfirmationManager::class);
+				->setType(ConfirmationManager::class)
+				->setFactory(DefaultConfirmationManager::class);
 		}
 
 		if ($config['subscription']['destination']) {
