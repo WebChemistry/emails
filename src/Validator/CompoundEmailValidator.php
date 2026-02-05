@@ -2,21 +2,16 @@
 
 namespace WebChemistry\Emails\Validator;
 
-final class CompoundEmailValidator implements EmailValidator
+final readonly class CompoundEmailValidator implements EmailValidator
 {
 
 	/**
-	 * @param EmailValidator[] $validators
+	 * @param iterable<EmailValidator> $validators
 	 */
 	public function __construct(
-		private array $validators,
+		private iterable $validators,
 	)
 	{
-	}
-
-	public function addValidator(EmailValidator $validator): void
-	{
-		$this->validators[] = $validator;
 	}
 
 	/**

@@ -28,9 +28,11 @@ final readonly class FileAdapter implements MailerAdapter
 		$type = null;
 		$extras = [];
 
+		$uniqueId = uniqid();
+
 		if ($message instanceof HtmlMessage) {
 			$type = 'html';
-			$fileName = 'send_' . $date . '.' . uniqid() . '.html';
+			$fileName = 'send_' . $date . '.' . $uniqueId . '.html';
 			$filePath = $this->directory . '/' . $fileName;
 
 			$extras['file'] = $fileName;
@@ -67,7 +69,7 @@ final readonly class FileAdapter implements MailerAdapter
 
 		$json = $this->encode($values);
 
-		FileSystem::write($this->directory . '/send_' . $date . '.' . uniqid() . '.json', $json);
+		FileSystem::write($this->directory . '/send_' . $date . '.' . $uniqueId . '.json', $json);
 	}
 
 	public function operate(
