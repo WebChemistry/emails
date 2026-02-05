@@ -6,6 +6,7 @@ use SensitiveParameter;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Webhook\WebhookProcessor;
 use WebChemistry\Emails\Webhook\WebhookRequest;
+use WebChemistry\Emails\Webhook\WebhookResult;
 
 final class MailgunWebhookProcessor implements WebhookProcessor
 {
@@ -17,24 +18,24 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 	{
 	}
 
-	public function process(EmailManager $manager, WebhookRequest $request, string $section): int
+	public function process(EmailManager $manager, WebhookRequest $request, string $section): WebhookResult
 	{
 		if ($request->isEmptyBody()) {
-			return self::BadRequest;
+			return WebhookResult::BadRequest;
 		}
 
 		if (!$request->isPostMethod()) {
-			return self::MethodNotAllowed;
+			return WebhookResult::MethodNotAllowed;
 		}
 
 		$json = json_decode($request->body, true);
 
 		if (json_last_error()) {
-			return self::BadRequest;
+			return WebhookResult::BadRequest;
 		}
 
 		if (!is_array($json['signature'] ?? null)) {
-			return self::BadRequest;
+			return WebhookResult::BadRequest;
 		}
 
 		$token = $this->toString($json['signature']['token'] ?? null);
@@ -44,13 +45,13 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 		$expectedSignature = hash_hmac('sha256', $timestamp . $token, $this->secret);
 
 		if (!hash_equals($expectedSignature, $signature)) {
-			return self::InvalidSignature;
+			return WebhookResult::InvalidSignature;
 		}
 
 		$payload = $json['event-data'] ?? null;
 
 		if (!is_array($payload)) {
-			return self::BadRequest;
+			return WebhookResult::BadRequest;
 		}
 
 
@@ -59,7 +60,7 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 		$severity = $this->toString($payload['severity'] ?? null);
 
 		if ($event === '' || $email === '') {
-			return self::BadRequest;
+			return WebhookResult::BadRequest;
 		}
 
 		if ($event === 'opened') {
@@ -78,7 +79,7 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 			$manager->spamComplaint($email);
 		}
 
-		return self::Success;
+		return WebhookResult::Success;
 	}
 
 	private function toString(mixed $value): string

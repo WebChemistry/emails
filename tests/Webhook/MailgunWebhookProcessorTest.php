@@ -7,6 +7,7 @@ use Tests\TestCase;
 use Tests\WebhookEnvironment;
 use WebChemistry\Emails\Adapter\Webhook\MailgunWebhookProcessor;
 use WebChemistry\Emails\Type\SuspensionType;
+use WebChemistry\Emails\Webhook\WebhookResult;
 
 final class MailgunWebhookProcessorTest extends TestCase
 {
@@ -29,7 +30,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::MethodNotAllowed, $code);
+		$this->assertSame(WebhookResult::MethodNotAllowed, $code);
 	}
 
 	public function testEmptyBody(): void
@@ -38,7 +39,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::BadRequest, $code);
+		$this->assertSame(WebhookResult::BadRequest, $code);
 	}
 
 	public function testInvalidJson(): void
@@ -47,7 +48,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::BadRequest, $code);
+		$this->assertSame(WebhookResult::BadRequest, $code);
 	}
 
 	public function testSignatureMismatch(): void
@@ -56,7 +57,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::InvalidSignature, $code);
+		$this->assertSame(WebhookResult::InvalidSignature, $code);
 	}
 
 	public function testSpamComplaint(): void
@@ -65,7 +66,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::Success, $code);
+		$this->assertSame(WebhookResult::Success, $code);
 		$this->assertSame([SuspensionType::SpamComplaint], $this->suspensionModel->getReasons($this->email));
 	}
 
@@ -79,7 +80,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::Success, $code);
+		$this->assertSame(WebhookResult::Success, $code);
 		$this->assertSame(0, $this->inactivityModel->getCount($this->email, $this->sections->getSection('notifications')));
 	}
 
@@ -89,7 +90,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::Success, $code);
+		$this->assertSame(WebhookResult::Success, $code);
 		$this->assertFalse($this->manager->canSend($this->email, 'notifications'));
 		$this->assertSame([SuspensionType::HardBounce], $this->suspensionModel->getReasons($this->email));
 	}
@@ -100,7 +101,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::Success, $code);
+		$this->assertSame(WebhookResult::Success, $code);
 		$this->assertTrue($this->manager->canSend($this->email, 'notifications'));
 
 		$this->assertSame(1, $this->softBounceModel->getBounceCount($this->email));
@@ -112,7 +113,7 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
-		$this->assertSame($this->webhook::Success, $code);
+		$this->assertSame(WebhookResult::Success, $code);
 		$this->assertFalse($this->manager->canSend($this->email, 'notifications'));
 		$this->assertFalse($this->subscriptionModel->isSubscribed($this->email, $this->sections->getCategory('notifications')));
 	}
