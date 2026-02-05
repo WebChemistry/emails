@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Adapter;
 
 use SensitiveParameter;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use WebChemistry\Emails\EmailAccount;
@@ -18,12 +19,14 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 	/** @deprecated  */
 	public const Resubscribe = 'resubscribe';
 
+	private HttpClientInterface $client;
+
 	public function __construct(
 		#[SensitiveParameter]
 		private string $secret,
-		private HttpClientInterface $client,
 	)
 	{
+		$this->client = HttpClient::create();
 	}
 
 	public function operate(
