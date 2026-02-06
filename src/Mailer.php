@@ -2,6 +2,7 @@
 
 namespace WebChemistry\Emails;
 
+use WebChemistry\Emails\Exception\HttpClientException;
 use WebChemistry\Emails\Section\SectionCategory;
 
 interface Mailer
@@ -14,6 +15,8 @@ interface Mailer
 	/**
 	 * @param EmailAccount[] $recipients
 	 * @param mixed[] $options Mailer specific options
+	 *
+	 * @throws HttpClientException
 	 */
 	public function send(
 		array $recipients,
@@ -27,6 +30,8 @@ interface Mailer
 	 * @param EmailAccount[] $accounts
 	 * @param string[] $groups
 	 * @param mixed[] $options Mailer specific options
+	 *
+	 * @throws HttpClientException
 	 */
 	public function operate(
 		array $accounts,
