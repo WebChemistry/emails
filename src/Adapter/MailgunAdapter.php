@@ -4,7 +4,6 @@ namespace WebChemistry\Emails\Adapter;
 
 use InvalidArgumentException;
 use Mailgun\Mailgun;
-use Psr\Http\Client\ClientExceptionInterface;
 use SensitiveParameter;
 use WebChemistry\Emails\HtmlMessage;
 use WebChemistry\Emails\Mailer;
@@ -61,11 +60,7 @@ final readonly class MailgunAdapter extends AbstractAdapter
 			$builder->addCustomHeader('List-Unsubscribe', '<%recipient.unsubscribe_link%>');
 		}
 
-		try {
-			$builder->finalize();
-		} catch (ClientExceptionInterface $exception) {
-
-		}
+		$builder->finalize();
 	}
 
 }
