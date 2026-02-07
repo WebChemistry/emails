@@ -3,11 +3,13 @@
 namespace WebChemistry\Emails\Adapter;
 
 use SensitiveParameter;
+use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
+use WebChemistry\Emails\Exception\HttpClientException;
 use WebChemistry\Emails\OperationType;
 use WebChemistry\Emails\SubscriberEmailAccount;
 
@@ -44,8 +46,12 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 		if ($count === 1) {
 			$account = $accounts[array_key_first($accounts)];
 
-			$this->sendApiRequest('POST', '/api/subscribers', $this->accountToArray($account, $groups))
-				->getContent();
+			try {
+				$this->sendApiRequest('POST', '/api/subscribers', $this->accountToArray($account, $groups))
+					->getContent();
+			} catch (ClientException $exception) {
+				throw new HttpClientException($exception->getResponse());
+			}
 
 			return;
 		}
@@ -63,9 +69,13 @@ final readonly class MailerliteAdapter extends AbstractAdapter
 				];
 			}
 
-			$this->sendApiRequest('POST', '/api/batch', [
-				'requests' => $requests,
-			])->getContent(); // calling getContent() just to throw exception if response is not successful
+			try {
+				$this->sendApiRequest('POST', '/api/batch', [
+					'requests' => $requests,
+				])->getContent(); // calling getContent() just to throw exception if response is not successful
+			} catch (ClientException $exception) {
+				throw new HttpClientException($exception->getResponse());
+			}
 		}
 	}
 
