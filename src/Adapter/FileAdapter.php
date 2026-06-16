@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Adapter;
 
 use Nette\Utils\FileSystem;
+use RuntimeException;
 use WebChemistry\Emails\EmailAccount;
 use WebChemistry\Emails\EmailAccountWithFields;
 use WebChemistry\Emails\HtmlMessage;
@@ -16,8 +17,12 @@ use WebChemistry\Emails\TemplateMessage;
 final readonly class FileAdapter implements MailerAdapter
 {
 
+	private const int MaxLoggedRecipients = 10;
+	private const int MaxLoggedTextLength = 500;
+
 	public function __construct(
 		private string $directory,
+		private ?string $logFile = null,
 	)
 	{
 	}
@@ -32,8 +37,8 @@ final readonly class FileAdapter implements MailerAdapter
 
 		if ($message instanceof HtmlMessage) {
 			$type = 'html';
-			$fileName = 'send_' . $date . '.' . $uniqueId . '.html';
-			$filePath = $this->directory . '/' . $fileName;
+			$fileName = sprintf('send_%s.%s.html', $date, $uniqueId);
+			$filePath = sprintf('%s/%s', $this->directory, $fileName);
 
 			$extras['file'] = $fileName;
 
@@ -69,7 +74,9 @@ final readonly class FileAdapter implements MailerAdapter
 
 		$json = $this->encode($values);
 
-		FileSystem::write($this->directory . '/send_' . $date . '.' . $uniqueId . '.json', $json);
+		FileSystem::write(sprintf('%s/send_%s.%s.json', $this->directory, $date, $uniqueId), $json);
+
+		$this->appendLog($this->createSendLogValues($date, $type, $recipients, $message, $extras));
 	}
 
 	public function operate(
@@ -86,7 +93,25 @@ final readonly class FileAdapter implements MailerAdapter
 			'options' => $options,
 		]);
 
-		FileSystem::write($this->directory . '/operation_' . $this->getDate() . '.' . uniqid() . '.json', $json);
+		FileSystem::write(sprintf('%s/operation_%s.%s.json', $this->directory, $this->getDate(), uniqid()), $json);
+	}
+
+	/**
+	 * @param mixed[] $values
+	 */
+	private function appendLog(array $values): void
+	{
+		if ($this->logFile === null) {
+			return;
+		}
+
+		FileSystem::createDir(dirname($this->logFile));
+
+		$result = file_put_contents($this->logFile, sprintf("%s\n", $this->encode($values, false)), FILE_APPEND | LOCK_EX);
+
+		if ($result === false) {
+			throw new RuntimeException(sprintf('Cannot write email log file %s.', $this->logFile));
+		}
 	}
 
 	/**
@@ -109,11 +134,17 @@ final readonly class FileAdapter implements MailerAdapter
 	/**
 	 * @param mixed[] $values
 	 */
-	private function encode(array $values): string
+	private function encode(array $values, bool $pretty = true): string
 	{
+		$options = JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION;
+
+		if ($pretty) {
+			$options |= JSON_PRETTY_PRINT;
+		}
+
 		return json_encode(
 			$values,
-			JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_PRETTY_PRINT,
+			$options,
 		);
 	}
 
@@ -143,6 +174,63 @@ final readonly class FileAdapter implements MailerAdapter
 		}
 
 		return $account->toString();
+	}
+
+	/**
+	 * @param EmailAccount[] $recipients
+	 * @param array<string, string> $extras
+	 * @return mixed[]
+	 */
+	private function createSendLogValues(
+		string $date,
+		?string $type,
+		array $recipients,
+		Message $message,
+		array $extras,
+	): array
+	{
+		$values = [
+			'sent_at' => $date,
+			'type' => $type,
+			'recipients' => $this->processLogRecipients($recipients),
+			'message' => [
+				'sender' => ($sender = $message->getSender()) ? $sender->toString() : null,
+				'subject' => $this->shortenText($message->getSubject()),
+				...$extras,
+			],
+		];
+
+		if ($message instanceof HtmlMessage) {
+			$bodyPreview = preg_replace('/\s+/', ' ', trim(strip_tags($message->getBody())));
+
+			$values['message']['body_preview'] = $this->shortenText($bodyPreview ?? '');
+		}
+
+		return $values;
+	}
+
+	/**
+	 * @param EmailAccount[] $recipients
+	 * @return array{count: int, items: list<string>, truncated: bool}
+	 */
+	private function processLogRecipients(array $recipients): array
+	{
+		$loggedRecipients = array_values(array_slice($recipients, 0, self::MaxLoggedRecipients));
+
+		return [
+			'count' => count($recipients),
+			'items' => array_map(fn (EmailAccount $account): string => $account->toString(), $loggedRecipients),
+			'truncated' => count($recipients) > self::MaxLoggedRecipients,
+		];
+	}
+
+	private function shortenText(?string $text): ?string
+	{
+		if ($text === null || strlen($text) <= self::MaxLoggedTextLength) {
+			return $text;
+		}
+
+		return sprintf('%s...', substr($text, 0, self::MaxLoggedTextLength));
 	}
 
 }
