@@ -226,11 +226,11 @@ final readonly class FileAdapter implements MailerAdapter
 
 	private function shortenText(?string $text): ?string
 	{
-		if ($text === null || strlen($text) <= self::MaxLoggedTextLength) {
+		if ($text === null || mb_strlen($text) <= self::MaxLoggedTextLength) {
 			return $text;
 		}
 
-		return sprintf('%s...', substr($text, 0, self::MaxLoggedTextLength));
+		return sprintf('%s...', mb_substr($text, 0, self::MaxLoggedTextLength));
 	}
 
 }

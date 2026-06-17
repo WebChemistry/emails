@@ -37,6 +37,28 @@ final class FileAdapterTest extends TestCase
 		$this->assertStringMatchesFormatFile(__DIR__ . '/expected/sent-email.log', $logFileContent);
 	}
 
+	public function testLogsLongTextWithMultibyteCharacters(): void
+	{
+		$directory = $this->createTemporaryDirectory();
+		$logFile = sprintf('%s/emails.log', $directory);
+		$sender = new EmailAccount('sender@example.com', 'Sender');
+		$adapter = new FileAdapter($directory, $logFile);
+
+		// Prefix with single-byte chars so the 500-byte cut lands inside a multibyte character.
+		$longBody = sprintf('<p>%s%s</p>', str_repeat('a', 3), str_repeat('🚀', 600));
+		$longSubject = sprintf('%s%s', str_repeat('a', 3), str_repeat('🚀', 600));
+
+		$adapter->send(
+			[$this->firstEmailAccount],
+			new HtmlMessage($longBody, $longSubject, $sender),
+		);
+
+		$logFileContent = file_get_contents($logFile);
+
+		$this->assertIsString($logFileContent);
+		$this->assertJson($logFileContent);
+	}
+
 	public function testSentEmailLogFileIsOptional(): void
 	{
 		$directory = $this->createTemporaryDirectory();
