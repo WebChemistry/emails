@@ -2,7 +2,6 @@
 
 namespace WebChemistry\Emails\Bridge\Nette;
 
-use InvalidArgumentException;
 use Nette\Application\LinkGenerator;
 use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\Link\BaseUrlSubscribeLinkGenerator;
@@ -24,10 +23,6 @@ final readonly class NetteSubscribeLinkGenerator extends DecorateSubscribeLinkGe
 	)
 	{
 		$link = $linkGenerator->link($destination, $arguments);
-
-		if ($link === null) {
-			throw new InvalidArgumentException(sprintf('Cannot generate link for destination %s', $destination));
-		}
 
 		parent::__construct(new BaseUrlSubscribeLinkGenerator($link, $sections, $encoder));
 	}
