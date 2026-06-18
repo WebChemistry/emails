@@ -79,9 +79,21 @@ final class EmailsBundle extends AbstractBundle
 					->end()
 				->end()
 				->arrayNode('sections')
+					->useAttributeAsKey('name')
+					->validate()
+						->ifTrue(static function (array $sections): bool {
+							foreach (array_keys($sections) as $name) {
+								if (is_int($name) || is_numeric($name)) {
+									return true;
+								}
+							}
+
+							return false;
+						})
+						->thenInvalid('Section names must be non-numeric strings, "%s" given. Use a keyed map (sections: { notifications: ... }), not a list with a "-" bullet.')
+					->end()
 					->arrayPrototype()
 						->children()
-							->scalarNode('name')->isRequired()->end()
 							->arrayNode('categories')
 								->scalarPrototype()->end()
 								->defaultValue([])
@@ -235,13 +247,13 @@ final class EmailsBundle extends AbstractBundle
 	}
 
 	/**
-	 * @param list<array{name: non-empty-string, categories: list<string>, unsubscribable: bool, configs: list<array{class: class-string, arguments: list<string>}>}> $sections
+	 * @param array<non-empty-string, array{categories: list<string>, unsubscribable: bool, configs: list<array{class: class-string, arguments: list<string>}>}> $sections
 	 */
 	private function registerSections(array $sections, ContainerBuilder $builder): void
 	{
 		$sectionsDefinition = $builder->getDefinition(Sections::class);
 
-		foreach ($sections as $section) {
+		foreach ($sections as $name => $section) {
 			$configs = [];
 
 			foreach ($section['configs'] as $configItem) {
@@ -249,7 +261,7 @@ final class EmailsBundle extends AbstractBundle
 			}
 
 			$blueprint = new Definition(SectionBlueprint::class, [
-				'$name' => $section['name'],
+				'$name' => $name,
 				'$categories' => $section['categories'],
 				'$unsubscribable' => $section['unsubscribable'],
 				'$configs' => $configs,
