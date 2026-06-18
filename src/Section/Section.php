@@ -84,6 +84,8 @@ final readonly class Section
 	 */
 	public function validateCategories(array $categories): void
 	{
+		$categories = array_values(array_unique($categories));
+
 		foreach ($categories as $category) {
 			if (!$this->hasCategory($category)) {
 				throw new InvalidArgumentException(sprintf('Category %s does not exist in section %s.', $category, $this->name));

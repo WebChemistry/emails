@@ -115,4 +115,24 @@ final class SectionTest extends TestCase
 		$section->validateCategories(['daily']);
 	}
 
+	public function testValidateCategoriesIgnoresDuplicatesWhenComplete(): void
+	{
+		$section = new Section('newsletter', ['daily', 'weekly']);
+
+		$section->validateCategories(['daily', 'weekly', 'daily']);
+
+		$this->expectNotToPerformAssertions();
+	}
+
+	public function testValidateCategoriesDoesNotMaskMissingByDuplicates(): void
+	{
+		$section = new Section('newsletter', ['daily', 'weekly']);
+
+		// A duplicate must not let the count match and hide that 'weekly' is missing.
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Categories weekly are missing in section newsletter.');
+
+		$section->validateCategories(['daily', 'daily']);
+	}
+
 }
