@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Bridge\Symfony;
 
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -10,6 +11,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use WebChemistry\Emails\Adapter\CompoundAdapter;
 use WebChemistry\Emails\Adapter\NeverAdapter;
+use WebChemistry\Emails\Bridge\Symfony\DependencyInjection\EmailsProfilerPass;
 use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Command\GenerateSecretCommand;
 use WebChemistry\Emails\Common\Encoder;
@@ -34,6 +36,18 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_it
 
 final class EmailsBundle extends AbstractBundle
 {
+
+	public function build(ContainerBuilder $container): void
+	{
+		parent::build($container);
+
+		$container->addCompilerPass(new EmailsProfilerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100);
+	}
+
+	public function getPath(): string
+	{
+		return __DIR__;
+	}
 
 	public function configure(DefinitionConfigurator $definition): void
 	{

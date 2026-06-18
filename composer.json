@@ -40,6 +40,9 @@
 		"symfony/config": "^7.2",
 		"symfony/dependency-injection": "^7.2"
 	},
+	"suggest": {
+		"symfony/web-profiler-bundle": "To display sent emails in the Symfony profiler (dev only)"
+	},
 	"config": {
 		"allow-plugins": {
 			"php-http/discovery": true
