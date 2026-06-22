@@ -6,6 +6,11 @@ use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Id;
 use WebChemistry\Emails\Section\Section;
 
+/**
+ * Backs the email_inactivity_counters table managed by the inactivity plugin.
+ *
+ * @see \WebChemistry\Emails\Plugin\Inactivity\InactivityPlugin
+ */
 trait EmailInactivityCounterEntity // @phpstan-ignore trait.unused
 {
 

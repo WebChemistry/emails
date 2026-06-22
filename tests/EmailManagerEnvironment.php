@@ -8,10 +8,11 @@ use WebChemistry\Emails\Common\Encoder;
 use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Link\BaseUrlSubscribeLinkGenerator;
-use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Plugin\Inactivity\InactivityConfig;
+use WebChemistry\Emails\Plugin\Inactivity\InactivityPlugin;
 
 trait EmailManagerEnvironment
 {
@@ -19,9 +20,9 @@ trait EmailManagerEnvironment
 	use DatabaseEnvironment;
 	use SectionEnvironment;
 
-	private InactivityModel $inactivityModel;
-
 	private SoftBounceModel $softBounceModel;
+
+	private InactivityPlugin $inactivityPlugin;
 
 	private EmailManager $manager;
 
@@ -38,20 +39,32 @@ trait EmailManagerEnvironment
 	{
 		$encoder = new Encoder('secret');
 
-		$this->inactivityModel = new InactivityModel(2, $this->connectionAccessor);
 		$this->softBounceModel = new SoftBounceModel($this->connectionAccessor);
 		$this->subscriptionModel = new SubscriptionModel($this->connectionAccessor);
 		$this->unsubscribeLinkGenerator = new BaseUrlSubscribeLinkGenerator('http://example.com', $this->sections, $encoder);
 		$this->suspensionModel = new SuspensionModel($this->connectionAccessor);
 		$this->dispatcher = new EventDispatcher();
+		$this->inactivityPlugin = new InactivityPlugin($this->connectionAccessor);
+		$this->dispatcher->addSubscriber($this->inactivityPlugin);
 		$this->manager = new DefaultEmailManager(
 			$this->sections,
-			$this->inactivityModel,
 			$this->softBounceModel,
 			$this->subscriptionModel,
 			$this->suspensionModel,
 			$this->dispatcher,
 		);
+	}
+
+	/**
+	 * @return object[]
+	 */
+	public function configureSection(string $section): array
+	{
+		if ($section === 'notifications') {
+			return [new InactivityConfig(2)];
+		}
+
+		return [];
 	}
 
 }

@@ -72,16 +72,16 @@ final class MailgunWebhookProcessorTest extends TestCase
 
 	public function testOpen(): void
 	{
-		$this->inactivityModel->incrementCounter($this->email, $this->sections->getSection('notifications'));
+		$this->inactivityPlugin->incrementCounter($this->email, $this->sections->getSection('notifications'), 2);
 
-		$this->assertSame(1, $this->inactivityModel->getCount($this->email, $this->sections->getSection('notifications')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->email, $this->sections->getSection('notifications')));
 
 		$request = $this->createRequest(__DIR__ . '/mailgun/open.http');
 
 		$code = $this->webhook->process($this->manager, $request, 'notifications');
 
 		$this->assertSame(WebhookResult::Success, $code);
-		$this->assertSame(0, $this->inactivityModel->getCount($this->email, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->email, $this->sections->getSection('notifications')));
 	}
 
 	public function testHardBounce(): void

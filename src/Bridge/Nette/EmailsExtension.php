@@ -18,7 +18,6 @@ use WebChemistry\Emails\Connection\DefaultConnectionAccessor;
 use WebChemistry\Emails\DefaultEmailManager;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Link\SubscribeLinkGenerator;
-use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
@@ -34,9 +33,6 @@ final class EmailsExtension extends CompilerExtension
 			'encoder' => Expect::structure([
 				'secret' => Expect::string()->dynamic(),
 			])->castTo('array'),
-			'inactivity' => Expect::structure([
-				'limit' => Expect::int()->required(),
-			])->required()->castTo('array'),
 			'softBounce' => Expect::structure([
 				'limit' => Expect::int(3),
 			])->castTo('array'),
@@ -62,9 +58,6 @@ final class EmailsExtension extends CompilerExtension
 		$builder->addDefinition($this->prefix('manager'))
 			->setType(EmailManager::class)
 			->setFactory(DefaultEmailManager::class);
-
-		$builder->addDefinition($this->prefix('model.inactivity'))
-			->setFactory(InactivityModel::class, [$config['inactivity']['limit']]);
 
 		$builder->addDefinition($this->prefix('model.softBounce'))
 			->setFactory(SoftBounceModel::class, ['bounceLimit' => $config['softBounce']['limit']]);

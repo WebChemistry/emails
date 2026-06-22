@@ -1,36 +1,71 @@
 <?php declare(strict_types = 1);
 
-namespace WebChemistry\Emails\Model;
+namespace WebChemistry\Emails\Plugin\Inactivity;
 
 use Doctrine\DBAL\ArrayParameterType;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
+use WebChemistry\Emails\Event\EmailOpenedEvent;
+use WebChemistry\Emails\Event\EmailResetEvent;
+use WebChemistry\Emails\Event\EmailSuspendedEvent;
+use WebChemistry\Emails\Model\ManipulationModel;
 use WebChemistry\Emails\Section\Section;
 
-final readonly class InactivityModel
+final class InactivityPlugin implements EventSubscriberInterface
 {
 
 	use ManipulationModel;
 
 	public function __construct(
-		private int $maxInactivity,
 		private ConnectionAccessor $connectionAccessor,
 	)
 	{
 	}
 
+	public static function getSubscribedEvents(): array
+	{
+		return [
+			AfterEmailSentEvent::class => 'afterEmailSent',
+			EmailOpenedEvent::class => 'emailOpened',
+			EmailSuspendedEvent::class => 'emailSuspended',
+			EmailResetEvent::class => 'emailReset',
+		];
+	}
+
 	public function afterEmailSent(AfterEmailSentEvent $event): void
 	{
-		$unsubscribed = $this->incrementCounter($event->registry->getEmails(), $event->category->section);
+		$config = $event->category->section->configCollection->getOrNull(InactivityConfig::class);
+
+		if ($config === null) {
+			return;
+		}
+
+		$unsubscribed = $this->incrementCounter($event->registry->getEmails(), $event->category->section, $config->limit);
 
 		$event->emailManager->inactive($unsubscribed, $event->category->section->name);
+	}
+
+	public function emailOpened(EmailOpenedEvent $event): void
+	{
+		$this->resetCounter($event->emails, $event->section);
+	}
+
+	public function emailSuspended(EmailSuspendedEvent $event): void
+	{
+		$this->resetAllCounterSections($event->emails);
+	}
+
+	public function emailReset(EmailResetEvent $event): void
+	{
+		$this->resetAllCounterSections($event->emails);
 	}
 
 	/**
 	 * @param string|string[] $emails
 	 * @return string[]
 	 */
-	public function incrementCounter(string|array $emails, Section $section): array
+	public function incrementCounter(string|array $emails, Section $section, int $limit): array
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;
 
@@ -45,7 +80,7 @@ final readonly class InactivityModel
 			fn () => 'counter = counter + 1',
 		);
 
-		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section->name), $section);
+		$this->resetCounter($inactiveEmails = $this->getInactiveEmails($section->name, $limit), $section);
 
 		return $inactiveEmails;
 	}
@@ -99,7 +134,7 @@ final readonly class InactivityModel
 	/**
 	 * @return string[]
 	 */
-	private function getInactiveEmails(string $section): array
+	private function getInactiveEmails(string $section, int $limit): array
 	{
 		$connection = $this->connectionAccessor->get();
 
@@ -108,7 +143,7 @@ final readonly class InactivityModel
 			->from('email_inactivity_counters')
 			->where('counter > :counter')
 			->andWhere('section = :section')
-			->setParameter('counter', $this->maxInactivity)
+			->setParameter('counter', $limit)
 			->setParameter('section', $section)
 			->executeQuery();
 

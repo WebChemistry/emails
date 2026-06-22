@@ -6,10 +6,12 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Event\EmailOpenedEvent;
+use WebChemistry\Emails\Event\EmailResetEvent;
+use WebChemistry\Emails\Event\EmailSuspendedEvent;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Link\DecodedResubscribeValue;
 use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
-use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
@@ -27,7 +29,6 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	public function __construct(
 		private Sections $sections,
-		private InactivityModel $inactivityModel,
 		private SoftBounceModel $softBounceModel,
 		private SubscriptionModel $subscriptionModel,
 		private SuspensionModel $suspensionModel,
@@ -49,7 +50,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$this->suspensionModel->suspend($emails, SuspensionType::HardBounce);
 
-		$this->resetSoftBouncesAndInactivity($emails);
+		$this->suspended($emails);
 	}
 
 	/**
@@ -98,7 +99,7 @@ final readonly class DefaultEmailManager implements EmailManager
 		if ($unsubscribed) {
 			$this->suspensionModel->suspend($unsubscribed, SuspensionType::SoftBounce);
 
-			$this->resetSoftBouncesAndInactivity($unsubscribed);
+			$this->suspended($unsubscribed);
 		}
 	}
 
@@ -109,7 +110,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$this->suspensionModel->suspend($emails, SuspensionType::SpamComplaint);
 
-		$this->resetSoftBouncesAndInactivity($emails);
+		$this->suspended($emails);
 	}
 
 	/**
@@ -117,7 +118,9 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	public function emailOpened(array|string $emails, string $section): void
 	{
-		$this->inactivityModel->resetCounter($emails, $this->sections->getSection($section));
+		$this->dispatcher?->dispatch(
+			new EmailOpenedEvent(is_string($emails) ? [$emails] : $emails, $this->sections->getSection($section)),
+		);
 	}
 
 	/**
@@ -156,11 +159,7 @@ final readonly class DefaultEmailManager implements EmailManager
 	{
 		$event = new AfterEmailSentEvent($this, $registry, $this->sections->getCategory($section, $category));
 
-		$this->inactivityModel->afterEmailSent($event);
-
-		if ($this->dispatcher) {
-			$this->dispatcher->dispatch($event);
-		}
+		$this->dispatcher?->dispatch($event);
 	}
 
 	public function canSend(string $email, string $section, string $category = SectionCategory::Global): bool
@@ -175,19 +174,22 @@ final readonly class DefaultEmailManager implements EmailManager
 	 */
 	public function reset(array|string $emails): void
 	{
-		$this->resetSoftBouncesAndInactivity($emails);
+		$this->softBounceModel->resetBounce($emails);
 
 		$this->subscriptionModel->reset($emails);
 		$this->suspensionModel->reset($emails);
+
+		$this->dispatcher?->dispatch(new EmailResetEvent(is_string($emails) ? [$emails] : $emails));
 	}
 
 	/**
 	 * @param string[]|string $emails
 	 */
-	private function resetSoftBouncesAndInactivity(array|string $emails): void
+	private function suspended(array|string $emails): void
 	{
 		$this->softBounceModel->resetBounce($emails);
-		$this->inactivityModel->resetAllCounterSections($emails);
+
+		$this->dispatcher?->dispatch(new EmailSuspendedEvent(is_string($emails) ? [$emails] : $emails));
 	}
 
 	public function cleanup(): void

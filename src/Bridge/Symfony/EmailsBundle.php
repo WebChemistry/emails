@@ -24,7 +24,6 @@ use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Mailer;
 use WebChemistry\Emails\Mailer\ManagedMailer;
 use WebChemistry\Emails\MailerAdapter;
-use WebChemistry\Emails\Model\InactivityModel;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
@@ -56,12 +55,6 @@ final class EmailsBundle extends AbstractBundle
 				->arrayNode('encoder')
 					->children()
 						->scalarNode('secret')->defaultNull()->end()
-					->end()
-				->end()
-				->arrayNode('inactivity')
-					->isRequired()
-					->children()
-						->integerNode('limit')->isRequired()->end()
 					->end()
 				->end()
 				->arrayNode('soft_bounce')
@@ -126,12 +119,6 @@ final class EmailsBundle extends AbstractBundle
 		$services = $container->services();
 
 		$services->set(Sections::class);
-
-		$services->set(InactivityModel::class)
-			->args([
-				'$maxInactivity' => $config['inactivity']['limit'],
-			])
-			->autowire();
 
 		$services->set(SoftBounceModel::class)
 			->args([

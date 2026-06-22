@@ -100,11 +100,11 @@ final class EmailManagerTest extends TestCase
 	{
 		$this->simulateSent($this->firstEmail, 'notifications');
 
-		$this->assertSame(1, $this->inactivityModel->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
 
 		$this->manager->emailOpened($this->firstEmail, 'notifications');
 
-		$this->assertSame(0, $this->inactivityModel->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
 	}
 
 	public function testFilterFromSuspension(): void
