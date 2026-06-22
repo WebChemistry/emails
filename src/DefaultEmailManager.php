@@ -8,6 +8,7 @@ use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
+use WebChemistry\Emails\Event\EmailResubscribedEvent;
 use WebChemistry\Emails\Event\EmailSuspendedEvent;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Link\DecodedResubscribeValue;
@@ -90,6 +91,8 @@ final readonly class DefaultEmailManager implements EmailManager
 		$category = $this->sections->getCategory($section, $category);
 
 		$this->subscriptionModel->resubscribe($email, $category);
+
+		$this->dispatcher?->dispatch(new EmailResubscribedEvent($email, $category->section));
 	}
 
 	public function softBounce(string $email): void

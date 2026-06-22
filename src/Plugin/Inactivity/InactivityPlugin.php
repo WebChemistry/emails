@@ -8,6 +8,7 @@ use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
+use WebChemistry\Emails\Event\EmailResubscribedEvent;
 use WebChemistry\Emails\Event\EmailSuspendedEvent;
 use WebChemistry\Emails\Model\ManipulationModel;
 use WebChemistry\Emails\Section\Section;
@@ -28,6 +29,7 @@ final class InactivityPlugin implements EventSubscriberInterface
 		return [
 			AfterEmailSentEvent::class => 'afterEmailSent',
 			EmailOpenedEvent::class => 'emailOpened',
+			EmailResubscribedEvent::class => 'emailResubscribed',
 			EmailSuspendedEvent::class => 'emailSuspended',
 			EmailResetEvent::class => 'emailReset',
 		];
@@ -49,6 +51,11 @@ final class InactivityPlugin implements EventSubscriberInterface
 	public function emailOpened(EmailOpenedEvent $event): void
 	{
 		$this->resetCounter($event->emails, $event->section);
+	}
+
+	public function emailResubscribed(EmailResubscribedEvent $event): void
+	{
+		$this->resetCounter($event->email, $event->section);
 	}
 
 	public function emailSuspended(EmailSuspendedEvent $event): void

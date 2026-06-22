@@ -51,6 +51,9 @@ interface EmailManager
 
 	/**
 	 * Re-enables a previously unsubscribed recipient for the given category.
+	 *
+	 * Dispatches an event so plugins can drop any per-recipient state they keep; the inactivity plugin
+	 * uses it to reset its counter for the section, giving the returning recipient a clean start.
 	 */
 	public function resubscribe(string $email, string $section, string $category = SectionCategory::Global): void;
 
