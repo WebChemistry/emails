@@ -88,4 +88,75 @@ final class InactivityPluginTest extends TestCase
 		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
 	}
 
+	public function testIncrementIsScopedToSection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
+	public function testSuspensionResetsEverySection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('section'), 2);
+
+		$this->manager->hardBounce($this->firstEmail);
+
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
+	public function testResetResetsEverySection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('section'), 2);
+
+		$this->manager->reset($this->firstEmail);
+
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
+	public function testResubscribeResetsOnlyItsSection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('section'), 2);
+
+		$this->manager->resubscribe($this->firstEmail, 'notifications');
+
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
+	public function testOpenResetsOnlyItsSection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('section'), 2);
+
+		$this->manager->emailOpened($this->firstEmail, 'notifications');
+
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
+	public function testMultipleEmails(): void
+	{
+		$this->inactivityPlugin->incrementCounter([$this->firstEmail, $this->secondEmail], $this->sections->getSection('notifications'), 2);
+
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->secondEmail, $this->sections->getSection('notifications')));
+	}
+
+	public function testMultipleEmailsFinalSent(): void
+	{
+		$emails = [$this->firstEmail, $this->secondEmail];
+
+		$this->inactivityPlugin->incrementCounter($emails, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($emails, $this->sections->getSection('notifications'), 2);
+		$inactive = $this->inactivityPlugin->incrementCounter($emails, $this->sections->getSection('notifications'), 2);
+
+		$this->assertSame($emails, $inactive);
+	}
+
 }

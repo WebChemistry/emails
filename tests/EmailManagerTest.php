@@ -6,6 +6,7 @@ use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\StringEmailRegistry;
+use WebChemistry\Emails\Type\UnsubscribeType;
 
 final class EmailManagerTest extends TestCase
 {
@@ -59,6 +60,10 @@ final class EmailManagerTest extends TestCase
 
 		$this->sendingIsForbidden($this->firstEmail, 'notifications');
 		$this->assertTrue($called);
+		$this->assertSame(
+			UnsubscribeType::Inactivity,
+			$this->subscriptionModel->getInfo($this->firstEmail, $this->sections->getSection('notifications'))->getReason(),
+		);
 	}
 
 	public function testInactive(): void
