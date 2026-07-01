@@ -16,6 +16,7 @@ use WebChemistry\Emails\Link\DecodedUnsubscribeValue;
 use WebChemistry\Emails\Model\SoftBounceModel;
 use WebChemistry\Emails\Model\SubscriptionModel;
 use WebChemistry\Emails\Model\SuspensionModel;
+use WebChemistry\Emails\Section\DefaultSectionSubscriptionMap;
 use WebChemistry\Emails\Section\SectionCategory;
 use WebChemistry\Emails\Section\Sections;
 use WebChemistry\Emails\Section\SectionSubscriptionMap;
@@ -70,7 +71,7 @@ final readonly class DefaultEmailManager implements EmailManager
 
 	public function createSectionSubscriptionMap(string $section, string $email): SectionSubscriptionMap
 	{
-		return new SectionSubscriptionMap($this->subscriptionModel, $this->sections->getSection($section), $email);
+		return new DefaultSectionSubscriptionMap($this->subscriptionModel, $this->sections->getSection($section), $email);
 	}
 
 	public function processDecodedSubscribeValue(DecodedUnsubscribeValue|DecodedResubscribeValue|null $value): void
