@@ -142,6 +142,32 @@ final class EmailManagerTest extends TestCase
 		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
 	}
 
+	public function testForget(): void
+	{
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+		$this->manager->hardBounce($this->firstEmail);
+		$this->manager->softBounce($this->firstEmail);
+
+		$this->assertSame(1, $this->softBounceModel->getBounceCount($this->firstEmail));
+
+		$this->manager->forget($this->firstEmail);
+
+		$this->sendingIsAllowed($this->firstEmail, 'notifications');
+		$this->sendingIsAllowed($this->firstEmail, Section::Essential);
+		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
+	}
+
+	public function testForgetAcceptsListOfEmails(): void
+	{
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+		$this->manager->hardBounce($this->secondEmail);
+
+		$this->manager->forget([$this->firstEmail, $this->secondEmail]);
+
+		$this->sendingIsAllowed($this->firstEmail, 'notifications');
+		$this->sendingIsAllowed($this->secondEmail, Section::Essential);
+	}
+
 	private function simulateSent(array|string $emails, string $section, string $category = SectionCategory::Global): void
 	{
 		$emails = is_string($emails) ? [$emails] : $emails;

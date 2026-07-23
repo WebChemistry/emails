@@ -73,6 +73,36 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 		$this->assertSame([], $this->databaseSnapshot());
 	}
 
+	public function testForgetDeletesRowsAcrossAllSectionsOnlyForTargetedEmails(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'another');
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->secondEmail]), 'notifications');
+
+		$this->manager->forget($this->firstEmail);
+
+		$this->assertSame([
+			[
+				'email' => $this->secondEmail,
+				'sent_at' => '2021-01-01 12:00:00',
+			],
+		], $this->databaseSnapshot());
+	}
+
+	public function testResetDoesNotDeleteLastSentRows(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+
+		$this->manager->reset($this->firstEmail);
+
+		$this->assertSame([
+			[
+				'email' => $this->firstEmail,
+				'sent_at' => '2021-01-01 12:00:00',
+			],
+		], $this->databaseSnapshot());
+	}
+
 	public function testSentInForbiddenTime(): void
 	{
 		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');

@@ -110,6 +110,16 @@ interface EmailManager
 	public function reset(array|string $emails): void;
 
 	/**
+	 * Permanently removes every piece of tracked state for the recipient: suspensions, soft bounces and
+	 * subscriptions, and through the dispatched event the plugin state that deliberately survives
+	 * {@see self::reset()} as well - the inactivity counters and the last-sent throttling records.
+	 * Intended for account deletion / right-to-be-forgotten.
+	 *
+	 * @param string[]|string $emails
+	 */
+	public function forget(array|string $emails): void;
+
+	/**
 	 * Unsubscribes the recipient from the section's global category for inactivity and dispatches an
 	 * {@see \WebChemistry\Emails\Event\InactiveEmailsEvent}. Normally called by the inactivity plugin
 	 * once its counter is exceeded, but it can also be invoked directly.

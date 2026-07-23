@@ -6,6 +6,7 @@ use Doctrine\DBAL\ArrayParameterType;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
+use WebChemistry\Emails\Event\EmailForgottenEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
 use WebChemistry\Emails\Event\EmailResubscribedEvent;
@@ -32,6 +33,7 @@ final class InactivityPlugin implements EventSubscriberInterface
 			EmailResubscribedEvent::class => 'emailResubscribed',
 			EmailSuspendedEvent::class => 'emailSuspended',
 			EmailResetEvent::class => 'emailReset',
+			EmailForgottenEvent::class => 'emailForgotten',
 		];
 	}
 
@@ -64,6 +66,11 @@ final class InactivityPlugin implements EventSubscriberInterface
 	}
 
 	public function emailReset(EmailResetEvent $event): void
+	{
+		$this->resetAllCounterSections($event->emails);
+	}
+
+	public function emailForgotten(EmailForgottenEvent $event): void
 	{
 		$this->resetAllCounterSections($event->emails);
 	}

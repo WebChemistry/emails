@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Plugin\LastSent;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use WebChemistry\Emails\Cleanup\PeriodicCleaner;
@@ -10,6 +11,7 @@ use WebChemistry\Emails\Common\PlatformQueryHelper;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Event\EmailForgottenEvent;
 use WebChemistry\Emails\Model\ManipulationModel;
 use WebChemistry\Emails\Section\Sections;
 
@@ -30,6 +32,7 @@ final class LastSentPlugin implements EventSubscriberInterface, PeriodicCleaner
 		return [
 			BeforeEmailSentEvent::class => 'beforeEmailSent',
 			AfterEmailSentEvent::class => 'afterEmailSent',
+			EmailForgottenEvent::class => 'emailForgotten',
 		];
 	}
 
@@ -73,6 +76,19 @@ final class LastSentPlugin implements EventSubscriberInterface, PeriodicCleaner
 			'sent_at' => $now,
 			'section' => $event->category->section->name,
 		], $event->registry->getEmails()), ['email', 'section'], $fn);
+	}
+
+	public function emailForgotten(EmailForgottenEvent $event): void
+	{
+		if (!$event->emails) {
+			return;
+		}
+
+		$this->connectionAccessor->get()->createQueryBuilder()
+			->delete('email_last_sent')
+			->where('email IN(?)')
+			->setParameter(0, $event->emails, ArrayParameterType::STRING)
+			->executeStatement();
 	}
 
 	public function cleanup(Sections $sections): void

@@ -118,6 +118,17 @@ final class InactivityPluginTest extends TestCase
 		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
 	}
 
+	public function testForgetResetsEverySection(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('section'), 2);
+
+		$this->manager->forget($this->firstEmail);
+
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('section')));
+	}
+
 	public function testResubscribeResetsOnlyItsSection(): void
 	{
 		$this->inactivityPlugin->incrementCounter($this->firstEmail, $this->sections->getSection('notifications'), 2);

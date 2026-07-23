@@ -6,6 +6,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
+use WebChemistry\Emails\Event\EmailForgottenEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
 use WebChemistry\Emails\Event\EmailResubscribedEvent;
@@ -184,6 +185,19 @@ final readonly class DefaultEmailManager implements EmailManager
 		$this->suspensionModel->reset($emails);
 
 		$this->dispatcher?->dispatch(new EmailResetEvent(is_string($emails) ? [$emails] : $emails));
+	}
+
+	/**
+	 * @param string[]|string $emails
+	 */
+	public function forget(array|string $emails): void
+	{
+		$this->softBounceModel->resetBounce($emails);
+
+		$this->subscriptionModel->reset($emails);
+		$this->suspensionModel->reset($emails);
+
+		$this->dispatcher?->dispatch(new EmailForgottenEvent(is_string($emails) ? [$emails] : $emails));
 	}
 
 	/**
