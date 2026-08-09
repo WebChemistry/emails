@@ -135,6 +135,11 @@ final readonly class SuspensionModel
 			->executeStatement();
 	}
 
+	public function move(string $from, string $to): void
+	{
+		$this->moveEmail('email_suspensions', ['type', 'created_at'], $from, $to);
+	}
+
 	/**
 	 * @param string[]|string $emails
 	 */

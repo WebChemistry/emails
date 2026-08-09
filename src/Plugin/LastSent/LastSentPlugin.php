@@ -12,6 +12,7 @@ use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Event\EmailForgottenEvent;
+use WebChemistry\Emails\Event\EmailMovedEvent;
 use WebChemistry\Emails\Model\ManipulationModel;
 use WebChemistry\Emails\Section\Sections;
 
@@ -33,6 +34,7 @@ final class LastSentPlugin implements EventSubscriberInterface, PeriodicCleaner
 			BeforeEmailSentEvent::class => 'beforeEmailSent',
 			AfterEmailSentEvent::class => 'afterEmailSent',
 			EmailForgottenEvent::class => 'emailForgotten',
+			EmailMovedEvent::class => 'emailMoved',
 		];
 	}
 
@@ -89,6 +91,11 @@ final class LastSentPlugin implements EventSubscriberInterface, PeriodicCleaner
 			->where('email IN(?)')
 			->setParameter(0, $event->emails, ArrayParameterType::STRING)
 			->executeStatement();
+	}
+
+	public function emailMoved(EmailMovedEvent $event): void
+	{
+		$this->moveEmail('email_last_sent', ['section', 'sent_at'], $event->from, $event->to);
 	}
 
 	public function cleanup(Sections $sections): void

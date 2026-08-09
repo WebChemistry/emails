@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use WebChemistry\Emails\Event\EmailMovedEvent;
 use WebChemistry\Emails\Event\InactiveEmailsEvent;
 use WebChemistry\Emails\Section\Section;
 use WebChemistry\Emails\Section\SectionCategory;
@@ -166,6 +167,62 @@ final class EmailManagerTest extends TestCase
 
 		$this->sendingIsAllowed($this->firstEmail, 'notifications');
 		$this->sendingIsAllowed($this->secondEmail, Section::Essential);
+	}
+
+	public function testMoveCarriesStateToNewAddress(): void
+	{
+		$this->simulateSent($this->firstEmail, 'notifications');
+		$this->manager->unsubscribe($this->firstEmail, 'notifications');
+		$this->manager->softBounce($this->firstEmail);
+
+		$this->manager->move($this->firstEmail, $this->secondEmail);
+
+		$this->sendingIsForbidden($this->secondEmail, 'notifications');
+		$this->sendingIsAllowed($this->firstEmail, 'notifications');
+
+		$this->assertSame(1, $this->softBounceModel->getBounceCount($this->secondEmail));
+		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
+
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->secondEmail, $this->sections->getSection('notifications')));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $this->sections->getSection('notifications')));
+	}
+
+	public function testMoveCarriesSuspensionToNewAddress(): void
+	{
+		$this->manager->hardBounce($this->firstEmail);
+
+		$this->manager->move($this->firstEmail, $this->secondEmail);
+
+		$this->sendingIsForbidden($this->secondEmail, Section::Essential);
+		$this->sendingIsAllowed($this->firstEmail, Section::Essential);
+	}
+
+	public function testMoveKeepsStateTheNewAddressAlreadyHas(): void
+	{
+		$this->manager->softBounce($this->firstEmail);
+		$this->manager->softBounce($this->secondEmail);
+		$this->manager->softBounce($this->secondEmail);
+
+		$this->manager->move($this->firstEmail, $this->secondEmail);
+
+		// The new address's own counter describes its mailbox best, so the moved one must not overwrite it.
+		$this->assertSame(2, $this->softBounceModel->getBounceCount($this->secondEmail));
+		$this->assertSame(0, $this->softBounceModel->getBounceCount($this->firstEmail));
+	}
+
+	public function testMoveToTheSameAddressIsNoOp(): void
+	{
+		$called = false;
+		$this->dispatcher->addListener(EmailMovedEvent::class, function () use (&$called): void {
+			$called = true;
+		});
+
+		$this->manager->softBounce($this->firstEmail);
+
+		$this->manager->move($this->firstEmail, $this->firstEmail);
+
+		$this->assertFalse($called);
+		$this->assertSame(1, $this->softBounceModel->getBounceCount($this->firstEmail));
 	}
 
 	private function simulateSent(array|string $emails, string $section, string $category = SectionCategory::Global): void

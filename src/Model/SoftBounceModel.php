@@ -10,6 +10,8 @@ use WebChemistry\Emails\Connection\ConnectionAccessor;
 final readonly class SoftBounceModel
 {
 
+	use ManipulationModel;
+
 	public function __construct(
 		private ConnectionAccessor $connectionAccessor,
 		private int $bounceLimit = 3,
@@ -73,6 +75,11 @@ final readonly class SoftBounceModel
 		}
 
 		return [];
+	}
+
+	public function move(string $from, string $to): void
+	{
+		$this->moveEmail('email_bounce_counters', ['counter'], $from, $to);
 	}
 
 	/**

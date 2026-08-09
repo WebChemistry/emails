@@ -7,6 +7,7 @@ use WebChemistry\Emails\Cleanup\PeriodicCleaner;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\BeforeEmailSentEvent;
 use WebChemistry\Emails\Event\EmailForgottenEvent;
+use WebChemistry\Emails\Event\EmailMovedEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
 use WebChemistry\Emails\Event\EmailResubscribedEvent;
@@ -198,6 +199,19 @@ final readonly class DefaultEmailManager implements EmailManager
 		$this->suspensionModel->reset($emails);
 
 		$this->dispatcher?->dispatch(new EmailForgottenEvent(is_string($emails) ? [$emails] : $emails));
+	}
+
+	public function move(string $from, string $to): void
+	{
+		if ($from === $to) {
+			return;
+		}
+
+		$this->softBounceModel->move($from, $to);
+		$this->subscriptionModel->move($from, $to);
+		$this->suspensionModel->move($from, $to);
+
+		$this->dispatcher?->dispatch(new EmailMovedEvent($from, $to));
 	}
 
 	/**

@@ -120,6 +120,15 @@ interface EmailManager
 	public function forget(array|string $emails): void;
 
 	/**
+	 * Moves every piece of tracked state for the recipient to a new address: suspensions, soft bounces
+	 * and subscriptions, and through the dispatched event the plugin state as well - the inactivity
+	 * counters and the last-sent throttling records. State the new address already has wins over the
+	 * moved one (its rows describe that mailbox best), and no state stays behind on the old address.
+	 * Intended for a user changing the email address of their account.
+	 */
+	public function move(string $from, string $to): void;
+
+	/**
 	 * Unsubscribes the recipient from the section's global category for inactivity and dispatches an
 	 * {@see \WebChemistry\Emails\Event\InactiveEmailsEvent}. Normally called by the inactivity plugin
 	 * once its counter is exceeded, but it can also be invoked directly.

@@ -7,6 +7,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use WebChemistry\Emails\Connection\ConnectionAccessor;
 use WebChemistry\Emails\Event\AfterEmailSentEvent;
 use WebChemistry\Emails\Event\EmailForgottenEvent;
+use WebChemistry\Emails\Event\EmailMovedEvent;
 use WebChemistry\Emails\Event\EmailOpenedEvent;
 use WebChemistry\Emails\Event\EmailResetEvent;
 use WebChemistry\Emails\Event\EmailResubscribedEvent;
@@ -34,6 +35,7 @@ final class InactivityPlugin implements EventSubscriberInterface
 			EmailSuspendedEvent::class => 'emailSuspended',
 			EmailResetEvent::class => 'emailReset',
 			EmailForgottenEvent::class => 'emailForgotten',
+			EmailMovedEvent::class => 'emailMoved',
 		];
 	}
 
@@ -73,6 +75,11 @@ final class InactivityPlugin implements EventSubscriberInterface
 	public function emailForgotten(EmailForgottenEvent $event): void
 	{
 		$this->resetAllCounterSections($event->emails);
+	}
+
+	public function emailMoved(EmailMovedEvent $event): void
+	{
+		$this->moveEmail('email_inactivity_counters', ['section', 'counter'], $event->from, $event->to);
 	}
 
 	/**

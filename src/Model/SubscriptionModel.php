@@ -49,6 +49,11 @@ final readonly class SubscriptionModel
 		return $this->getInfo($email, $section)->getCategoriesAsMapOfBooleans();
 	}
 
+	public function move(string $from, string $to): void
+	{
+		$this->moveEmail('email_subscriptions', ['section', 'category', 'type', 'created_at'], $from, $to);
+	}
+
 	/**
 	 * @param string|string[] $emails
 	 */

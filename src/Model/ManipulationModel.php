@@ -61,6 +61,43 @@ trait ManipulationModel
 	}
 
 	/**
+	 * Re-keys every row of the source email to the target email. Rows whose key already exists for the
+	 * target are dropped instead of overwriting it - the target's own state describes its mailbox best -
+	 * and no source row survives, so repeating an interrupted move is safe.
+	 *
+	 * @param non-empty-list<string> $columns All columns of the table except email.
+	 */
+	private function moveEmail(string $table, array $columns, string $from, string $to): void
+	{
+		$connection = $this->connectionAccessor->get();
+		$platform = $connection->getDatabasePlatform();
+
+		if ($platform instanceof SqlitePlatform) {
+			$insert = 'INSERT OR IGNORE';
+		} else if ($platform instanceof MySQLPlatform) {
+			$insert = 'INSERT IGNORE';
+		} else {
+			throw new LogicException('Unsupported platform.');
+		}
+
+		$columnList = implode(', ', $columns);
+
+		$connection->executeStatement(
+			sprintf(
+				'%s INTO %s (email, %s) SELECT ?, %s FROM %s WHERE email = ?',
+				$insert,
+				$table,
+				$columnList,
+				$columnList,
+				$table,
+			),
+			[$to, $from],
+		);
+
+		$connection->executeStatement(sprintf('DELETE FROM %s WHERE email = ?', $table), [$from]);
+	}
+
+	/**
 	 * @param array<array<string, string|int>> $rows
 	 * @return array{string, list<string>, list<string|int>}
 	 */

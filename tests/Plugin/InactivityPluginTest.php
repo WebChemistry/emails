@@ -170,4 +170,18 @@ final class InactivityPluginTest extends TestCase
 		$this->assertSame($emails, $inactive);
 	}
 
+	public function testMoveCarriesCounterAndKeepsTargetCounter(): void
+	{
+		$section = $this->sections->getSection('notifications');
+		$this->inactivityPlugin->incrementCounter($this->firstEmail, $section, 5);
+		$this->inactivityPlugin->incrementCounter($this->secondEmail, $section, 5);
+		$this->inactivityPlugin->incrementCounter($this->secondEmail, $section, 5);
+
+		$this->manager->move($this->firstEmail, $this->secondEmail);
+
+		// The new address's own counter wins; nothing stays behind on the old address.
+		$this->assertSame(2, $this->inactivityPlugin->getCount($this->secondEmail, $section));
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->firstEmail, $section));
+	}
+
 }

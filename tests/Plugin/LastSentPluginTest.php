@@ -176,6 +176,20 @@ final class LastSentPluginTest extends TestCase implements ConnectionInitializer
 		$this->assertCount(1, $this->databaseSnapshot());
 	}
 
+	public function testMoveCarriesRecordToNewAddress(): void
+	{
+		$this->manager->afterEmailSent(new StringEmailRegistry([$this->firstEmail]), 'notifications');
+
+		$this->manager->move($this->firstEmail, $this->secondEmail);
+
+		$this->assertSame([
+			[
+				'email' => $this->secondEmail,
+				'sent_at' => '2021-01-01 12:00:00',
+			],
+		], $this->databaseSnapshot());
+	}
+
 	/**
 	 * @return array{ email: string, sent_at: string }[]
 	 */
