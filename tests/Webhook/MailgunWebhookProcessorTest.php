@@ -118,4 +118,49 @@ final class MailgunWebhookProcessorTest extends TestCase
 		$this->assertFalse($this->subscriptionModel->isSubscribed($this->email, $this->sections->getCategory('notifications')));
 	}
 
+	/**
+	 * The section MailgunAdapter stamped into the custom variables wins over the argument, so an open of a
+	 * message from one section stops resetting another section's inactivity counter.
+	 */
+	public function testOpenIsAttributedToTheSectionFromTheVariables(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->email, $this->sections->getSection('notifications'), 2);
+		$this->inactivityPlugin->incrementCounter($this->email, $this->sections->getSection('section'), 2);
+
+		$request = $this->createRequest(__DIR__ . '/mailgun/open_section_variable.http');
+
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
+
+		$this->assertSame(WebhookResult::Success, $code);
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->email, $this->sections->getSection('section')));
+		$this->assertSame(1, $this->inactivityPlugin->getCount($this->email, $this->sections->getSection('notifications')));
+	}
+
+	public function testUnsubscribeIsAttributedToTheSectionFromTheVariables(): void
+	{
+		$request = $this->createRequest(__DIR__ . '/mailgun/unsubscribe_section_variable.http');
+
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
+
+		$this->assertSame(WebhookResult::Success, $code);
+		$this->assertFalse($this->manager->canSend($this->email, 'section'));
+		$this->assertTrue($this->manager->canSend($this->email, 'notifications'));
+	}
+
+	/**
+	 * A section renamed or dropped since the message went out must not turn a stale event into a failed
+	 * webhook - getSection() would throw on it - so it falls back to the section the caller passed.
+	 */
+	public function testUnknownSectionInTheVariablesFallsBackToTheArgument(): void
+	{
+		$this->inactivityPlugin->incrementCounter($this->email, $this->sections->getSection('notifications'), 2);
+
+		$request = $this->createRequest(__DIR__ . '/mailgun/open_unknown_section_variable.http');
+
+		$code = $this->webhook->process($this->manager, $request, 'notifications');
+
+		$this->assertSame(WebhookResult::Success, $code);
+		$this->assertSame(0, $this->inactivityPlugin->getCount($this->email, $this->sections->getSection('notifications')));
+	}
+
 }

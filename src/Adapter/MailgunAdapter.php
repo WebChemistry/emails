@@ -12,6 +12,9 @@ use WebChemistry\Emails\Message;
 final readonly class MailgunAdapter extends AbstractAdapter
 {
 
+	/** Custom variable carrying the section, read back by {@see MailgunWebhookProcessor}. */
+	public const string SectionVariable = 'section';
+
 	private Mailgun $client;
 
 	public function __construct(
@@ -38,6 +41,15 @@ final readonly class MailgunAdapter extends AbstractAdapter
 		$builder->setSubject($message->getSubject());
 		$builder->setHtmlBody($message->getBody());
 		$builder->setOpenTracking(true);
+
+		// Mailgun echoes custom data back on every event as user-variables, which is the only way the
+		// webhook can tell which section an open or an unsubscribe belongs to. Without it every event has
+		// to be attributed to one hardcoded section, and the recipient state of the others drifts.
+		$section = $options[Mailer::SectionOption] ?? null;
+
+		if (is_string($section) && $section !== '') {
+			$builder->addCustomData(self::SectionVariable, $section);
+		}
 
 		$generator = $options[Mailer::UnsubscribeGeneratorOption] ?? null;
 

@@ -3,6 +3,7 @@
 namespace WebChemistry\Emails\Adapter\Webhook;
 
 use SensitiveParameter;
+use WebChemistry\Emails\Adapter\MailgunAdapter;
 use WebChemistry\Emails\EmailManager;
 use WebChemistry\Emails\Webhook\WebhookProcessor;
 use WebChemistry\Emails\Webhook\WebhookRequest;
@@ -63,6 +64,8 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 			return WebhookResult::BadRequest;
 		}
 
+		$section = $this->resolveSection($manager, $payload, $section);
+
 		if ($event === 'opened') {
 			$manager->emailOpened($email, $section);
 		} else if ($event === 'unsubscribed') {
@@ -80,6 +83,31 @@ final class MailgunWebhookProcessor implements WebhookProcessor
 		}
 
 		return WebhookResult::Success;
+	}
+
+	/**
+	 * The section the message was sent under, as MailgunAdapter stamped it into the custom variables and
+	 * Mailgun echoed it back. Falls back to $fallback for anything it cannot trust: messages sent before
+	 * the adapter started stamping it, and sections that have since been renamed or dropped from the
+	 * configuration - getSection() would throw on those, turning a stale event into a failed webhook.
+	 *
+	 * @param mixed[] $payload
+	 */
+	private function resolveSection(EmailManager $manager, array $payload, string $fallback): string
+	{
+		$variables = $payload['user-variables'] ?? null;
+
+		if (!is_array($variables)) {
+			return $fallback;
+		}
+
+		$section = $this->toString($variables[MailgunAdapter::SectionVariable] ?? null);
+
+		if ($section === '' || !$manager->getSections()->has($section)) {
+			return $fallback;
+		}
+
+		return $section;
 	}
 
 	private function toString(mixed $value): string

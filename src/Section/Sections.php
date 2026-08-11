@@ -44,6 +44,15 @@ final class Sections
 		$this->sections[$section->name] = $section;
 	}
 
+	/**
+	 * Whether a section of this name is configured. Callers that take a section name from outside the
+	 * application - a webhook payload, a stored value - should ask before getSection(), which throws.
+	 */
+	public function has(string $section): bool
+	{
+		return isset($this->sections[$section]);
+	}
+
 	public function getSection(string $section): Section
 	{
 		return $this->sections[$section] ?? throw new InvalidArgumentException(sprintf('Section %s does not exist.', $section));
