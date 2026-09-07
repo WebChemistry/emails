@@ -14,16 +14,31 @@ final class DefaultConfirmationManager implements ConfirmationManager
 	{
 	}
 
-	public function getConfirmationCode(string $email): string
+	public function getConfirmationCode(string $email, ?string ...$arguments): string
 	{
-		return $this->encoder->withType(EncodeType::Encrypted)->encode($email);
+		return $this->encoder->withType(EncodeType::Encrypted)->encode($email, ...$arguments);
 	}
 
 	public function verify(string $code): ?string
 	{
+		return $this->decode($code)?->email;
+	}
+
+	public function decode(string $code): ?DecodedConfirmationValue
+	{
 		$values = $this->encoder->withType(EncodeType::Encrypted)->decode($code);
 
-		return $values[0] ?? null;
+		if ($values === null) {
+			return null;
+		}
+
+		$email = $values[0];
+
+		if ($email === null) {
+			return null;
+		}
+
+		return new DecodedConfirmationValue($email, array_slice($values, 1));
 	}
 
 }
