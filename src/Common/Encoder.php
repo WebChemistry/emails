@@ -35,8 +35,17 @@ final class Encoder
 		return new self($this->secret, $type);
 	}
 
+	/**
+	 * @return non-empty-string
+	 */
 	public function encode(string $value, ?string ...$arguments): string
 	{
+		// Trailing nulls carry nothing, so they go before the salt or iv joins the arguments - after it they
+		// would never be the last element and every omitted optional argument would add an empty segment.
+		while (count($arguments) > 0 && end($arguments) === null) {
+			array_pop($arguments);
+		}
+
 		$iv = '';
 
 		if ($this->type === EncodeType::Salt) {
@@ -50,11 +59,6 @@ final class Encoder
 			}
 
 			$arguments['iv'] = $iv = openssl_random_pseudo_bytes($length);
-		}
-
-		// remove empty arguments from the end
-		while (count($arguments) > 0 && end($arguments) === null) {
-			array_pop($arguments);
 		}
 
 		$values = [
@@ -109,7 +113,8 @@ final class Encoder
 
 			$iv = $this->decodeValue($iv, '');
 
-			if ($iv === null) {
+			// A corrupted iv segment is bad input like any other; openssl would only warn and truncate it.
+			if ($iv === null || strlen($iv) !== openssl_cipher_iv_length('aes-256-cbc')) {
 				return null;
 			}
 		}
@@ -177,8 +182,10 @@ final class Encoder
 		if ($iv !== '') {
 			$decoded = openssl_decrypt($decoded, 'aes-256-cbc', $this->secret, 0, $iv);
 
+			// A tampered segment or a token from another secret does not decrypt (the padding no longer
+			// checks out); that is bad input to reject, like a failed signature, not a fault in the encoder.
 			if ($decoded === false) {
-				throw new LogicException('Decryption failed.');
+				return null;
 			}
 		}
 
