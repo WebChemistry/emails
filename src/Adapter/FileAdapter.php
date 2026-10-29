@@ -42,6 +42,13 @@ final readonly class FileAdapter implements MailerAdapter
 
 			$extras['file'] = $fileName;
 
+			// Recorded only when set, so captures of messages without one keep their shape.
+			$replyTo = $message->getReplyTo();
+
+			if ($replyTo !== null) {
+				$extras['reply_to'] = $replyTo->toString();
+			}
+
 			FileSystem::write($filePath, $message->getBody());
 		} else if ($message instanceof TemplateMessage) {
 			$type = 'template';

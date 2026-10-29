@@ -38,6 +38,13 @@ final readonly class MailgunAdapter extends AbstractAdapter
 		$builder = $this->client->messages()->getBatchMessage($this->domain);
 
 		$builder->setFromAddress($sender->email, array_filter(['full_name' => $sender->name]));
+
+		$replyTo = $message->getReplyTo();
+
+		if ($replyTo !== null) {
+			$builder->setReplyToAddress($replyTo->email, array_filter(['full_name' => $replyTo->name]));
+		}
+
 		$builder->setSubject($message->getSubject());
 		$builder->setHtmlBody($message->getBody());
 		$builder->setOpenTracking(true);

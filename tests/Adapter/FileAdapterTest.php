@@ -59,6 +59,38 @@ final class FileAdapterTest extends TestCase
 		$this->assertJson($logFileContent);
 	}
 
+	public function testRecordsReplyToOfHtmlMessage(): void
+	{
+		$directory = $this->createTemporaryDirectory();
+		$adapter = new FileAdapter($directory);
+		$message = new HtmlMessage('<p>Content</p>', 'Subject', new EmailAccount('sender@example.com', 'Sender'));
+
+		$adapter->send([$this->firstEmailAccount], $message->withReplyTo(new EmailAccount('reply@example.com', 'Reply')));
+
+		$jsonFiles = glob(sprintf('%s/send_*.json', $directory));
+
+		$this->assertIsArray($jsonFiles);
+		$this->assertCount(1, $jsonFiles);
+
+		$json = file_get_contents($jsonFiles[0]);
+
+		$this->assertIsString($json);
+
+		/** @var array{message: array<string, string>} $values */
+		$values = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+		$sentMessage = $values['message'];
+
+		// The captured body's file name carries the time and a unique id; the rest is compared whole.
+		$this->assertStringMatchesFormat('send_%s.%s.html', $sentMessage['file']);
+		unset($sentMessage['file']);
+
+		$this->assertSame([
+			'sender' => 'Sender <sender@example.com>',
+			'subject' => 'Subject',
+			'reply_to' => 'Reply <reply@example.com>',
+		], $sentMessage);
+	}
+
 	public function testSentEmailLogFileIsOptional(): void
 	{
 		$directory = $this->createTemporaryDirectory();

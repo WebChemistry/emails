@@ -47,11 +47,14 @@ final readonly class AmazonAdapter extends AbstractAdapter
 			throw new InvalidArgumentException(sprintf('Message must be instance of %s.', HtmlMessage::class));
 		}
 
+		$replyTo = $message->getReplyTo();
+
 		$this->client->sendEmail([
 			'Destination' => [
 				'ToAddresses' => array_map(fn (EmailAccount $recipient): string => $recipient->email, $recipients),
 			],
 			'FromEmailAddress' => $message->getSender()->toString(),
+			...($replyTo !== null ? ['ReplyToAddresses' => [$replyTo->toString()]] : []),
 			'Content' => [
 				'Simple' => [
 					'Subject' => [
