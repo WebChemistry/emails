@@ -51,7 +51,8 @@ final readonly class AmazonAdapter extends AbstractAdapter
 
 		$this->client->sendEmail([
 			'Destination' => [
-				'ToAddresses' => array_map(fn (EmailAccount $recipient): string => $recipient->email, $recipients),
+				// The SDK types the addresses as a list, and the recipients may come keyed.
+				'ToAddresses' => array_values(array_map(fn (EmailAccount $recipient): string => $recipient->email, $recipients)),
 			],
 			'FromEmailAddress' => $message->getSender()->toString(),
 			...($replyTo !== null ? ['ReplyToAddresses' => [$replyTo->toString()]] : []),
