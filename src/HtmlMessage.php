@@ -5,11 +5,15 @@ namespace WebChemistry\Emails;
 final readonly class HtmlMessage implements Message
 {
 
+	/**
+	 * @param list<EmailAttachment> $attachments
+	 */
 	public function __construct(
 		private string $body,
 		private string $subject,
 		private EmailAccount $sender,
 		private ?EmailAccount $replyTo = null,
+		private array $attachments = [],
 	)
 	{
 	}
@@ -38,11 +42,29 @@ final readonly class HtmlMessage implements Message
 	}
 
 	/**
+	 * The files sent with the message, in the order they were added.
+	 *
+	 * @return list<EmailAttachment>
+	 */
+	public function getAttachments(): array
+	{
+		return $this->attachments;
+	}
+
+	/**
 	 * The same message answered to another address; generated templates build their messages without one.
 	 */
 	public function withReplyTo(EmailAccount $replyTo): self
 	{
-		return new self($this->body, $this->subject, $this->sender, $replyTo);
+		return new self($this->body, $this->subject, $this->sender, $replyTo, $this->attachments);
+	}
+
+	/**
+	 * The same message with one more file after the ones it already carries.
+	 */
+	public function withAttachment(EmailAttachment $attachment): self
+	{
+		return new self($this->body, $this->subject, $this->sender, $this->replyTo, [...$this->attachments, $attachment]);
 	}
 
 }

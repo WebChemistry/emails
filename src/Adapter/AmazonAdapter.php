@@ -47,6 +47,11 @@ final readonly class AmazonAdapter extends AbstractAdapter
 			throw new InvalidArgumentException(sprintf('Message must be instance of %s.', HtmlMessage::class));
 		}
 
+		// The simple content of SES v2 this adapter sends has no attachments; they would need a raw MIME message.
+		if ($message->getAttachments() !== []) {
+			throw new InvalidArgumentException('Attachments are not supported by the Amazon adapter.');
+		}
+
 		$replyTo = $message->getReplyTo();
 
 		$this->client->sendEmail([

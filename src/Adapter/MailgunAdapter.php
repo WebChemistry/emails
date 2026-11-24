@@ -47,6 +47,12 @@ final readonly class MailgunAdapter extends AbstractAdapter
 
 		$builder->setSubject($message->getSubject());
 		$builder->setHtmlBody($message->getBody());
+
+		// The SDK takes no content type for an attachment; its multipart builder guesses one from the file name's extension.
+		foreach ($message->getAttachments() as $attachment) {
+			$builder->addStringAttachment($attachment->content, $attachment->fileName);
+		}
+
 		$builder->setOpenTracking(true);
 
 		// Mailgun echoes custom data back on every event as user-variables, which is the only way the

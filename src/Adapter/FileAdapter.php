@@ -49,6 +49,26 @@ final readonly class FileAdapter implements MailerAdapter
 				$extras['reply_to'] = $replyTo->toString();
 			}
 
+			// Each attachment lands beside the body under a name of the same capture, recorded together with
+			// the name and type it was sent with; recorded only when present.
+			$attachments = [];
+
+			foreach ($message->getAttachments() as $index => $attachment) {
+				$attachmentFileName = sprintf('send_%s.%s.%d-%s', $date, $uniqueId, $index, $this->toSafeFileName($attachment->fileName));
+
+				FileSystem::write(sprintf('%s/%s', $this->directory, $attachmentFileName), $attachment->content);
+
+				$attachments[] = [
+					'file' => $attachmentFileName,
+					'name' => $attachment->fileName,
+					'content_type' => $attachment->contentType,
+				];
+			}
+
+			if ($attachments !== []) {
+				$extras['attachments'] = $attachments;
+			}
+
 			FileSystem::write($filePath, $message->getBody());
 		} else if ($message instanceof TemplateMessage) {
 			$type = 'template';
@@ -185,7 +205,7 @@ final readonly class FileAdapter implements MailerAdapter
 
 	/**
 	 * @param EmailAccount[] $recipients
-	 * @param array<string, string> $extras
+	 * @param array<string, string|list<array{file: string, name: string, content_type: string}>> $extras
 	 * @return mixed[]
 	 */
 	private function createSendLogValues(
@@ -238,6 +258,16 @@ final readonly class FileAdapter implements MailerAdapter
 		}
 
 		return sprintf('%s...', mb_substr($text, 0, self::MaxLoggedTextLength));
+	}
+
+	/**
+	 * The attachment's name without directories, reduced to characters every file system takes.
+	 */
+	private function toSafeFileName(string $fileName): string
+	{
+		$safeFileName = preg_replace('/[^A-Za-z0-9._-]+/', '-', basename($fileName));
+
+		return $safeFileName !== null && $safeFileName !== '' ? $safeFileName : 'attachment';
 	}
 
 }

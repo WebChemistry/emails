@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use Tests\TestCase;
 use WebChemistry\Emails\Adapter\FileAdapter;
 use WebChemistry\Emails\EmailAccount;
+use WebChemistry\Emails\EmailAttachment;
 use WebChemistry\Emails\HtmlMessage;
 use WebChemistry\Emails\TemplateMessage;
 
@@ -91,6 +92,61 @@ final class FileAdapterTest extends TestCase
 		], $sentMessage);
 	}
 
+	public function testWritesAttachmentsOfHtmlMessageBesideTheBody(): void
+	{
+		$directory = $this->createTemporaryDirectory();
+		$adapter = new FileAdapter($directory);
+		$message = (new HtmlMessage('<p>Content</p>', 'Subject', new EmailAccount('sender@example.com', 'Sender')))
+			->withAttachment(new EmailAttachment('screen shot.png', 'png-bytes', 'image/png'))
+			->withAttachment(new EmailAttachment('../notes.txt', 'text-bytes', 'text/plain'));
+
+		$adapter->send([$this->firstEmailAccount], $message);
+
+		[$capturePrefix, $values] = $this->readOnlySendCapture($directory);
+
+		/** @var array{message: array{file: string, attachments: list<array{file: string, name: string, content_type: string}>}} $values */
+		$sentMessage = $values['message'];
+
+		$this->assertSame(sprintf('%s.html', $capturePrefix), $sentMessage['file']);
+		$this->assertSame([
+			[
+				'file' => sprintf('%s.0-screen-shot.png', $capturePrefix),
+				'name' => 'screen shot.png',
+				'content_type' => 'image/png',
+			],
+			[
+				'file' => sprintf('%s.1-notes.txt', $capturePrefix),
+				'name' => '../notes.txt',
+				'content_type' => 'text/plain',
+			],
+		], $sentMessage['attachments']);
+		$this->assertSame(
+			['png-bytes', 'text-bytes'],
+			array_map(
+				fn (array $attachment): string|false => file_get_contents(sprintf('%s/%s', $directory, $attachment['file'])),
+				$sentMessage['attachments'],
+			),
+		);
+	}
+
+	public function testNamesAttachmentWithoutUsableFileNameGenerically(): void
+	{
+		$directory = $this->createTemporaryDirectory();
+		$adapter = new FileAdapter($directory);
+		$message = (new HtmlMessage('<p>Content</p>', 'Subject', new EmailAccount('sender@example.com')))
+			->withAttachment(new EmailAttachment('/', 'bytes', 'application/octet-stream'));
+
+		$adapter->send([$this->firstEmailAccount], $message);
+
+		[$capturePrefix, $values] = $this->readOnlySendCapture($directory);
+
+		/** @var array{message: array{attachments: list<array{file: string}>}} $values */
+		$attachmentFileName = $values['message']['attachments'][0]['file'];
+
+		$this->assertSame(sprintf('%s.0-attachment', $capturePrefix), $attachmentFileName);
+		$this->assertSame('bytes', file_get_contents(sprintf('%s/%s', $directory, $attachmentFileName)));
+	}
+
 	public function testSentEmailLogFileIsOptional(): void
 	{
 		$directory = $this->createTemporaryDirectory();
@@ -122,6 +178,25 @@ final class FileAdapterTest extends TestCase
 		$this->temporaryDirectories[] = $directory;
 
 		return $directory;
+	}
+
+	/**
+	 * The prefix every file of the only send in the directory shares, and the values of its json.
+	 *
+	 * @return array{string, mixed}
+	 */
+	private function readOnlySendCapture(string $directory): array
+	{
+		$jsonFiles = glob(sprintf('%s/send_*.json', $directory));
+
+		$this->assertIsArray($jsonFiles);
+		$this->assertCount(1, $jsonFiles);
+
+		$json = file_get_contents($jsonFiles[0]);
+
+		$this->assertIsString($json);
+
+		return [basename($jsonFiles[0], '.json'), json_decode($json, true, flags: JSON_THROW_ON_ERROR)];
 	}
 
 }
